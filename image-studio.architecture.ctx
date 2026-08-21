@@ -1,0 +1,121 @@
+// =========================================================================
+// IMAGEN NANO BANANA IMAGE STUDIO V2 — AUTHORITATIVE ARCHITECTURAL CONTEXT
+// Format: .ctx (Local Multimodal Project Memory Architectural Memory Definition)
+// =========================================================================
+
+@section SystemOverview {
+  The application is a Dual-Pipeline Visual Prompt Orchestration Engine built on Next.js 15 App Router,
+  Zustand persistent state management, and Google Gemini 3.1 Flash Image (Nano Banana 2) multimodal generation.
+}
+
+// -------------------------------------------------------------------------
+// COMPONENT DEFINITIONS & RESPONSIBILITIES
+// -------------------------------------------------------------------------
+
+@component StudioTab {
+  responsibility: "Primary generation interface. Hosts visual concept prompt inputs, post headline typography textarea, publication bug tags, inpaint upload trigger, active viewport render, fullscreen inspection, and quick inspiration chips."
+  state_dependencies: ["useStudioStore.pipelineMode", "useStudioStore.rawPrompt", "useStudioStore.headlineText", "useStudioStore.editMode"]
+}
+
+@component OrchestratorTab {
+  responsibility: "Master parameter orchestration GUI. Hosts the Master Pipeline Selector pill switch, 5 E-Commerce domain selectors, lighting directives, camera framing, surface overrides, packaging label modes, and 5 Social Editorial post categories with typography vibes and dark gradient scrim placement."
+  state_dependencies: ["useStudioStore.pipelineMode", "useStudioStore.domain", "useStudioStore.postCategory", "useStudioStore.toggles"]
+}
+
+@component CanvasMask {
+  responsibility: "Touch-friendly HTML5 Canvas overlay for mobile inpainting. Allows painting glowing translucent masks over reference base images with automatic device pixel ratio scaling (scaleX = canvas.width / rect.width)."
+  state_dependencies: ["useStudioStore.baseImage", "useStudioStore.maskImage"]
+}
+
+@component Gallery {
+  responsibility: "Persistent local cache strip displaying the last 15 generations. Supports one-tap parameter restoration into the studio, inpaint bridge loading, image download, and batch screening manifest JSON exports."
+  state_dependencies: ["useStudioStore.gallery", "useStudioStore.currentGeneration"]
+}
+
+@component PromptPreview {
+  responsibility: "Live inspection tool for compiled XML prompts and instant CLI curl generator for terminal testing in Termux."
+}
+
+@module PromptCompiler {
+  responsibility: "Translates natural-language user intentions and structured UI states into strict, high-fidelity XML prompts for Google Gemini models."
+  file: "lib/compiler.ts"
+}
+
+@module GenerateApiRoute {
+  responsibility: "Next.js App Router POST handler. Assembles multimodal payload parts (text + baseImage + maskImage) and invokes @google/genai SDK ai.models.generateContent."
+  file: "app/api/generate/route.ts"
+}
+
+@module GeminiNanoBanana {
+  responsibility: "Target multimodal AI model (gemini-3.1-flash-image) generating high-contrast luxury visuals, dark gradient scrims, and sharp typography."
+  model_id: "gemini-3.1-flash-image"
+}
+
+@module MemoryEngine {
+  responsibility: "Local multimodal project memory layer. Manages incremental indexing, semantic code chunking, GraphRAG architectural relations, and hybrid search using node:sqlite."
+  file: "memory/engine.ts"
+}
+
+// -------------------------------------------------------------------------
+// EXPLICIT ARCHITECTURAL RELATIONS & DATA FLOW GRAPH
+// -------------------------------------------------------------------------
+
+@relation OrchestratorTab controls MasterPipeline (weight=1.5)
+@relation OrchestratorTab controls LightingDirective (weight=1.2)
+@relation OrchestratorTab controls CompositionFraming (weight=1.2)
+@relation OrchestratorTab controls PackagingTypography (weight=1.4)
+@relation OrchestratorTab controls SocialEditorialTheme (weight=1.4)
+
+@relation StudioTab renders ActiveViewport (weight=1.3)
+@relation StudioTab triggers PromptCompiler (weight=1.5)
+@relation StudioTab calls GenerateApiRoute (weight=1.5)
+
+@relation PromptCompiler produces CompiledPrompt (weight=1.5)
+@relation GenerateApiRoute calls GeminiNanoBanana (weight=1.5)
+@relation GeminiNanoBanana produces GeneratedImageData (weight=1.5)
+
+@relation Gallery persists GenerationRecord (weight=1.3)
+@relation Gallery bridges_to CanvasMask (weight=1.2)
+@relation CanvasMask produces BinaryMask (weight=1.4)
+
+@relation MemoryEngine indexes SourceMemory (weight=1.5)
+@relation MemoryEngine indexes ArchitecturalMemory (weight=1.5)
+@relation MemoryEngine indexes ExperientialMemory (weight=1.5)
+
+// -------------------------------------------------------------------------
+// ARCHITECTURAL DECISIONS & RATIONALE
+// -------------------------------------------------------------------------
+
+@decision DualPipelineBranching {
+  context: "Commercial e-commerce asset generation requires different art direction and constraints than viral social media graphics."
+  decision: "Split the compiler and GUI into two distinct pipelines: E-Commerce Studio (<photographer_persona>) and Social Editorial (<editorial_art_director>)."
+  consequences: "Eliminates prompt contamination and allows targeted typography scrims for social posts while keeping clean labels for e-commerce."
+}
+
+@decision Float32ArrayBlobStorage {
+  context: "Storing vector embeddings as JSON strings in SQLite incurs high memory allocation and CPU parsing overhead during retrieval in Termux."
+  decision: "Pack Float32Array directly into binary SQLite BLOBs using Buffer.from(vector.buffer, vector.byteOffset, vector.byteLength)."
+  consequences: "Achieves zero stringification overhead and fast indexed cosine similarity comparisons."
+}
+
+@decision NativeNodeSqlite {
+  context: "External vector databases (Chroma, Weaviate, Milvus) and Python dependencies are heavy and unreliable on mobile Termux."
+  decision: "Use built-in node:sqlite DatabaseSync with pure TypeScript vector math and FTS5 indexing."
+  consequences: "Zero native binary compilation issues, minimal RAM footprint, and instant cold-start capability."
+}
+
+// -------------------------------------------------------------------------
+// INVARIANTS & CONSTRAINTS (DO NOT BREAK)
+// -------------------------------------------------------------------------
+
+@invariant GeminiNanoBananaOnly {
+  rule: "Always target gemini-3.1-flash-image via ai.models.generateContent with responseModalities: ['IMAGE']. Never regress to deprecated imagen models."
+}
+
+@invariant NoSSRStateHydrationMismatch {
+  rule: "app/page.tsx must maintain a mounted state guard before rendering Zustand localStorage state to prevent SSR hydration errors."
+}
+
+@invariant CanvasCoordinateScaling {
+  rule: "Touch coordinates in CanvasMask.tsx must always be scaled by (canvas.width / rect.width) to prevent touch drift on high-DPI Android displays."
+}

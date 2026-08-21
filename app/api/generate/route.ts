@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { GenerateRequestSchema } from "@/lib/schema";
 import { compileStudioPrompt } from "@/lib/compiler";
+import { MemoryEngine } from "@/memory/engine";
 
 export async function POST(req: NextRequest) {
   try {
@@ -125,6 +126,33 @@ export async function POST(req: NextRequest) {
 
     const base64Image = imagePart.inlineData.data;
     const mimeType = imagePart.inlineData.mimeType || "image/jpeg";
+
+    // 8. Ingest experiential generation memory asynchronously (non-blocking)
+    try {
+      const engine = new MemoryEngine();
+      engine
+        .ingestGenerationMemory({
+          id: `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          originalIntent: input.rawPrompt,
+          compiledPrompt,
+          pipelineMode: input.pipelineMode,
+          domain: input.domain,
+          lighting: input.lighting,
+          composition: input.composition,
+          aspectRatio: input.aspectRatio,
+          headlineText: input.headlineText,
+          publicationBadge: input.publicationBadge,
+          authorBadge: input.authorBadge,
+          createdAt: Date.now(),
+        })
+        .then(() => engine.close())
+        .catch((e) => {
+          console.warn("Background generation memory ingestion notice:", e.message);
+          engine.close();
+        });
+    } catch (e) {
+      // Memory logging shouldn't block client response
+    }
 
     return NextResponse.json({
       success: true,
