@@ -19,6 +19,9 @@ import {
   X,
   Share2,
   ShoppingBag,
+  Type,
+  Tag,
+  User,
 } from "lucide-react";
 import { useStudioStore } from "@/lib/store";
 import { compileStudioPrompt } from "@/lib/compiler";
@@ -30,6 +33,7 @@ import { CanvasMask } from "./CanvasMask";
 export const StudioTab: React.FC = () => {
   const {
     pipelineMode,
+    setPipelineMode,
     rawPrompt,
     setRawPrompt,
     aspectRatio,
@@ -46,14 +50,18 @@ export const StudioTab: React.FC = () => {
     productName,
     productDetail,
     packagingText,
+    setPackagingText,
     toggles,
 
     // Social Editorial
     postCategory,
     headlineText,
+    setHeadlineText,
     publicationBadge,
+    setPublicationBadge,
     badgePosition,
     authorBadge,
+    setAuthorBadge,
     typographyStyle,
     textPlacement,
     artisticStyle,
@@ -84,23 +92,62 @@ export const StudioTab: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ecommerceIdeas = [
-    "Matte white cosmetic tube on folded beige cashmere textile with soft window sunlight",
-    "Amber glass dropper serum bottle resting beside delicate dried flora with warm raking shadows",
-    "Flawless solitaire diamond ring on deep obsidian velvet plinth with micro-facet caustics",
-    "Vintage 1982 Bordeaux wine bottle with aged wax seal resting on French oak cellar barrel",
+    {
+      prompt:
+        "Matte white cosmetic tube on folded beige cashmere textile with soft window sunlight",
+      label: "Calyx / Bare Barrier Cream",
+    },
+    {
+      prompt:
+        "Amber glass dropper serum bottle resting beside delicate dried flora with warm raking shadows",
+      label: "LUMEN / Botanical Elixir",
+    },
+    {
+      prompt:
+        "Flawless solitaire diamond ring on deep obsidian velvet plinth with micro-facet caustics",
+      label: "AURELIA / Haute Joaillerie",
+    },
+    {
+      prompt:
+        "Vintage 1982 Bordeaux wine bottle with aged wax seal resting on French oak cellar barrel",
+      label: "CHÂTEAU MARGAUX 1982",
+    },
   ];
 
   const socialEditorialIdeas = [
-    "Quantum singularity machine with luminescent golden particle vortex and fiber optic threads",
-    "Cosmic synaptic consciousness — neural bioluminescent filaments interwoven with cobalt nebulae",
-    "3D matte vinyl AI dev mascot coding on floating holographic neon telemetry interfaces",
-    "Annotated scientific quantum wave spectrum with cyan blueprint schematic grid",
+    {
+      prompt:
+        "Glowing golden singularity particle vortex funneling into a quantum spacetime grid with luminescent fiber optics",
+      headline:
+        "Your Bad Luck Isn't Random — And an Oxford Physicist's Machine Could Help Prove It",
+      badge: "iai news",
+      author: "Kanji Low • AI Marketing Strategist",
+    },
+    {
+      prompt:
+        "Bioluminescent synaptic neural network filaments branching through deep cobalt celestial cosmic void with glowing axon pulses",
+      headline:
+        "Consciousness Beyond Neurons: The Quantum Microtubule Revolution",
+      badge: "POP SCIENCE",
+      author: "Neuroscience Dispatch",
+    },
+    {
+      prompt:
+        "Stylized 3D matte vinyl AI dev mascot coding on floating glowing cyan and neon purple holographic telemetry windows",
+      headline:
+        "Why 90% of Autonomous AI Agents Fail in Production (And the 1 Architecture That Doesn't)",
+      badge: "DEV LEADERSHIP",
+      author: "Architect Weekly",
+    },
+    {
+      prompt:
+        "Annotated quantum wave spectrum schematic blueprint with glowing cyan neon geometric grid on obsidian carbon substrate",
+      headline:
+        "The Arrow of Time Can Be Reversed in Superconducting Qubits",
+      badge: "PHYSICS TODAY",
+      author: "Quantum Foundry",
+    },
   ];
-
-  const activeSampleIdeas =
-    pipelineMode === "social_editorial"
-      ? socialEditorialIdeas
-      : ecommerceIdeas;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -255,8 +302,8 @@ export const StudioTab: React.FC = () => {
     link.href = activeImageSrc;
     const prefix =
       currentGeneration.parameters.pipelineMode === "social_editorial"
-        ? `editorial-${currentGeneration.parameters.postCategory}`
-        : `ecommerce-${currentGeneration.parameters.domain?.toLowerCase()}`;
+        ? `editorial-${currentGeneration.parameters.postCategory || "post"}`
+        : `ecommerce-${currentGeneration.parameters.domain?.toLowerCase() || "asset"}`;
     link.download = `imagen-banana-${prefix}-${currentGeneration.timestamp}.jpg`;
     document.body.appendChild(link);
     link.click();
@@ -301,36 +348,46 @@ export const StudioTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      {/* Top Banner: Active Pipeline Info + Mode Selector */}
+      {/* Top Banner: Master Pipeline Selector & Inpaint Toggle */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-subtle-card gap-3">
-        <div className="flex items-center gap-2">
-          <div
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
-              pipelineMode === "social_editorial"
-                ? "bg-purple-500/10 text-purple-300 border border-purple-500/30"
-                : "bg-amber-500/10 text-amber-300 border border-amber-500/30"
+        {/* Pipeline Selector Switch */}
+        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setPipelineMode("ecommerce")}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              pipelineMode === "ecommerce"
+                ? "bg-amber-500 text-zinc-950 font-bold shadow-sm"
+                : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
-            {pipelineMode === "social_editorial" ? (
-              <>
-                <Share2 className="w-3.5 h-3.5" />
-                <span>Social Editorial Pipeline</span>
-              </>
-            ) : (
-              <>
-                <ShoppingBag className="w-3.5 h-3.5" />
-                <span>E-Commerce Studio Pipeline</span>
-              </>
-            )}
-          </div>
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span>E-Commerce Studio</span>
+          </button>
 
+          <button
+            type="button"
+            onClick={() => setPipelineMode("social_editorial")}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              pipelineMode === "social_editorial"
+                ? "bg-amber-500 text-zinc-950 font-bold shadow-sm"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span>Social Editorial</span>
+          </button>
+        </div>
+
+        {/* Action modes */}
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
           <div className="flex items-center bg-zinc-950 p-0.5 rounded-lg border border-zinc-800 text-xs">
             <button
               type="button"
               onClick={() => setEditMode("generate")}
               className={`px-3 py-1.5 rounded-md font-medium transition-all ${
                 editMode === "generate"
-                  ? "bg-amber-500 text-zinc-950 font-bold shadow-sm"
+                  ? "bg-zinc-800 text-amber-300 font-bold shadow-sm border border-zinc-700"
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
@@ -341,25 +398,25 @@ export const StudioTab: React.FC = () => {
               onClick={() => setEditMode("edit")}
               className={`px-3 py-1.5 rounded-md font-medium transition-all ${
                 editMode === "edit"
-                  ? "bg-amber-500 text-zinc-950 font-bold shadow-sm"
+                  ? "bg-zinc-800 text-amber-300 font-bold shadow-sm border border-zinc-700"
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
               Inpaint / Edit
             </button>
           </div>
-        </div>
 
-        {gallery.length > 0 && (
-          <button
-            onClick={handleExportManifest}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 hover:text-white rounded-xl border border-zinc-700/60 transition-colors"
-            title="Download screening manifest JSON for human review"
-          >
-            <FileJson className="w-3.5 h-3.5 text-amber-400" />
-            <span>Export Manifest</span>
-          </button>
-        )}
+          {gallery.length > 0 && (
+            <button
+              onClick={handleExportManifest}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 hover:text-white rounded-xl border border-zinc-700/60 transition-colors"
+              title="Download screening manifest JSON for human review"
+            >
+              <FileJson className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Export Manifest</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Edit / Inpaint Canvas Area (Shown when in Edit mode) */}
@@ -418,20 +475,21 @@ export const StudioTab: React.FC = () => {
         </div>
       )}
 
-      {/* Top Input & Action Section */}
-      <div className="flex flex-col gap-3 p-5 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 shadow-subtle-card backdrop-blur-md">
+      {/* ========================================================================= */}
+      {/* MAIN INPUT & COPYWRITING CARD (DYNAMIC BASED ON PIPELINE)                  */}
+      {/* ========================================================================= */}
+      <div className="flex flex-col gap-4 p-5 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 shadow-subtle-card backdrop-blur-md">
+        {/* Header & Meta Badges */}
         <div className="flex items-center justify-between">
-          <label
-            htmlFor="prompt-input"
-            className="text-xs font-semibold text-zinc-200 uppercase tracking-wider flex items-center gap-1.5"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            {editMode === "edit"
-              ? "Inpainting / Modification Instruction"
-              : pipelineMode === "social_editorial"
-              ? "Core Scientific / Conceptual Narrative Concept"
-              : "Natural Language Subject Concept"}
-          </label>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              {pipelineMode === "social_editorial"
+                ? "Social Editorial Prompt & Copy Studio"
+                : "E-Commerce Concept & Packaging Studio"}
+            </span>
+          </div>
+
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded-md border border-zinc-700/60">
               {pipelineMode === "social_editorial"
@@ -443,54 +501,202 @@ export const StudioTab: React.FC = () => {
               className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
             >
               <Sliders className="w-3.5 h-3.5" />
-              <span>Orchestrator</span>
+              <span>Full Orchestrator</span>
             </button>
           </div>
         </div>
 
-        {/* Textarea */}
-        <div className="relative">
-          <textarea
-            id="prompt-input"
-            rows={3}
-            value={rawPrompt}
-            onChange={(e) => setRawPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                e.preventDefault();
-                handleGenerate();
-              }
-            }}
-            placeholder={
-              editMode === "edit"
-                ? "Describe the exact modifications for the masked region..."
-                : pipelineMode === "social_editorial"
-                ? "Describe the high-concept visual (e.g. Glowing golden singularity particle vortex funneling through cosmic spacetime grid with luminescent fiber optics)..."
-                : "Describe your subject or product scene (e.g. Matte white cosmetic lotion tube on textured beige linen with soft morning light)..."
-            }
-            className="w-full p-4 rounded-xl text-sm leading-relaxed bg-zinc-950/70 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/80 focus:border-amber-500/80 transition-all resize-none shadow-inner"
-          />
-        </div>
-
-        {/* Quick Sample Inspiration Chips */}
-        {editMode === "generate" && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-            <span className="text-[11px] text-zinc-500 flex-shrink-0">Inspire:</span>
-            {activeSampleIdeas.map((idea, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setRawPrompt(idea)}
-                className="px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 text-zinc-300 hover:text-amber-200 transition-colors whitespace-nowrap flex-shrink-0"
+        {/* ======================================================= */}
+        {/* PIPELINE 1 (E-COMMERCE) STUDIO INPUTS                   */}
+        {/* ======================================================= */}
+        {pipelineMode === "ecommerce" && (
+          <div className="flex flex-col gap-3 animate-in fade-in">
+            {/* Subject Scene Prompt */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="prompt-input"
+                className="text-xs font-medium text-zinc-300 uppercase tracking-wider"
               >
-                {idea.length > 40 ? idea.substring(0, 40) + "..." : idea}
-              </button>
-            ))}
+                {editMode === "edit"
+                  ? "Inpainting / Modification Instruction"
+                  : "Product Staging & Subject Scene Prompt"}
+              </label>
+              <textarea
+                id="prompt-input"
+                rows={3}
+                value={rawPrompt}
+                onChange={(e) => setRawPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    handleGenerate();
+                  }
+                }}
+                placeholder="e.g. Matte white cosmetic lotion tube on textured beige linen with soft morning light..."
+                className="w-full p-3.5 rounded-xl text-sm leading-relaxed bg-zinc-950/70 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/80 resize-none shadow-inner"
+              />
+            </div>
+
+            {/* Packaging Typography Text Input */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="packaging-input"
+                className="text-xs font-medium text-zinc-300 uppercase tracking-wider flex items-center justify-between"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Type className="w-3.5 h-3.5 text-amber-400" />
+                  Packaging Typography / Label Copy (Optional)
+                </span>
+                <span className="text-[11px] text-zinc-500">
+                  Exact text to print on container
+                </span>
+              </label>
+              <input
+                id="packaging-input"
+                type="text"
+                value={packagingText}
+                onChange={(e) => setPackagingText(e.target.value)}
+                placeholder="e.g. Calyx / Bare Barrier Serum (or leave empty for blank container)"
+                className="w-full h-11 px-3.5 text-sm rounded-xl bg-zinc-950/70 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/80"
+              />
+            </div>
+
+            {/* E-Commerce Inspiration Chips */}
+            {editMode === "generate" && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                <span className="text-[11px] text-zinc-500 flex-shrink-0">
+                  Presets:
+                </span>
+                {ecommerceIdeas.map((idea, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setRawPrompt(idea.prompt);
+                      setPackagingText(idea.label);
+                    }}
+                    className="px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 text-zinc-300 hover:text-amber-200 transition-colors whitespace-nowrap flex-shrink-0"
+                  >
+                    {idea.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ======================================================= */}
+        {/* PIPELINE 2 (SOCIAL EDITORIAL) STUDIO INPUTS             */}
+        {/* ======================================================= */}
+        {pipelineMode === "social_editorial" && (
+          <div className="flex flex-col gap-3 animate-in fade-in">
+            {/* Visual Scene & Cosmic Prompt */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="social-prompt-input"
+                className="text-xs font-medium text-zinc-300 uppercase tracking-wider"
+              >
+                Visual Scene & Science Art Concept
+              </label>
+              <textarea
+                id="social-prompt-input"
+                rows={2}
+                value={rawPrompt}
+                onChange={(e) => setRawPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    handleGenerate();
+                  }
+                }}
+                placeholder="e.g. Glowing golden singularity particle vortex funneling into a quantum spacetime grid with luminescent fiber optics..."
+                className="w-full p-3.5 rounded-xl text-sm leading-relaxed bg-zinc-950/70 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/80 resize-none shadow-inner"
+              />
+            </div>
+
+            {/* Primary Headline Copy Textarea */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="headline-input"
+                className="text-xs font-medium text-zinc-300 uppercase tracking-wider flex items-center justify-between"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Type className="w-3.5 h-3.5 text-amber-400" />
+                  Post Headline / Hook Copy (Integrated Scrim Text)
+                </span>
+                <span className="text-[11px] text-amber-400 font-mono">
+                  Exact Rendered Typography
+                </span>
+              </label>
+              <textarea
+                id="headline-input"
+                rows={2}
+                value={headlineText}
+                onChange={(e) => setHeadlineText(e.target.value)}
+                placeholder="e.g. Your Bad Luck Isn't Random — And an Oxford Physicist's Machine Could Help Prove It"
+                className="w-full p-3 text-sm leading-snug rounded-xl bg-zinc-950/70 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/80 resize-none"
+              />
+            </div>
+
+            {/* Publication Badge & Author Metadata Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-amber-400" />
+                  Publication Bug / Brand Tag
+                </label>
+                <input
+                  type="text"
+                  value={publicationBadge}
+                  onChange={(e) => setPublicationBadge(e.target.value)}
+                  placeholder="e.g. iai news or POP MECH"
+                  className="w-full h-10 px-3 text-sm rounded-xl bg-zinc-950/70 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/80"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-amber-400" />
+                  Author / Footer Subhead (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={authorBadge}
+                  onChange={(e) => setAuthorBadge(e.target.value)}
+                  placeholder="e.g. Kanji Low • AI Marketing Strategist"
+                  className="w-full h-10 px-3 text-sm rounded-xl bg-zinc-950/70 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/80"
+                />
+              </div>
+            </div>
+
+            {/* Social Editorial Inspiration Chips */}
+            {editMode === "generate" && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-1">
+                <span className="text-[11px] text-zinc-500 flex-shrink-0">
+                  Viral Presets:
+                </span>
+                {socialEditorialIdeas.map((idea, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setRawPrompt(idea.prompt);
+                      setHeadlineText(idea.headline);
+                      setPublicationBadge(idea.badge);
+                      setAuthorBadge(idea.author);
+                    }}
+                    className="px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 text-zinc-300 hover:text-amber-200 transition-colors whitespace-nowrap flex-shrink-0"
+                  >
+                    {idea.badge}: {idea.headline.substring(0, 30)}...
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Action Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-zinc-800/60">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-zinc-800/60">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               type="button"
@@ -659,7 +865,7 @@ export const StudioTab: React.FC = () => {
               <div>
                 <h4 className="text-sm font-medium text-zinc-300">Studio Viewport Idle</h4>
                 <p className="text-xs text-zinc-500 max-w-xs mt-1">
-                  Type your prompt above and click Generate to create luxury studio imagery.
+                  Type your prompt and copy above and click Generate to create luxury imagery.
                 </p>
               </div>
             </div>
