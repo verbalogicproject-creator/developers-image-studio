@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Wand2,
   Copy,
@@ -12,12 +12,19 @@ import {
   Maximize2,
   Minimize2,
   Info,
+  ImagePlus,
+  Paintbrush,
+  Layers,
+  UploadCloud,
+  FileJson,
+  X,
 } from "lucide-react";
 import { useStudioStore } from "@/lib/store";
 import { compileStudioPrompt } from "@/lib/compiler";
 import { Button } from "./ui/Button";
 import { Gallery } from "./Gallery";
 import { PromptPreview } from "./PromptPreview";
+import { CanvasMask } from "./CanvasMask";
 
 export const StudioTab: React.FC = () => {
   const {
@@ -29,7 +36,21 @@ export const StudioTab: React.FC = () => {
     material,
     aspectRatio,
     brandColor,
+    labelMode,
+    brandName,
+    productName,
+    productDetail,
+    packagingText,
+    excludeElements,
     toggles,
+    editMode,
+    setEditMode,
+    baseImage,
+    baseImageMimeType,
+    maskImage,
+    setBaseImage,
+    setMaskImage,
+    clearEditImages,
     isGenerating,
     setIsGenerating,
     error,
@@ -37,11 +58,13 @@ export const StudioTab: React.FC = () => {
     currentGeneration,
     addGeneration,
     setActiveTab,
+    gallery,
   } = useStudioStore();
 
   const [copied, setCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPromptDetails, setShowPromptDetails] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sampleIdeas = [
     "Matte white cosmetic tube on folded beige cashmere textile with soft window sunlight",
@@ -50,9 +73,28 @@ export const StudioTab: React.FC = () => {
     "Vintage 1982 Bordeaux wine bottle with aged wax seal resting on French oak cellar barrel",
   ];
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const mimeType = file.type || "image/jpeg";
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setBaseImage(result, mimeType);
+      setMaskImage(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleGenerate = async () => {
     if (!rawPrompt.trim()) {
       setError("Please enter a concept prompt before generating.");
+      return;
+    }
+
+    if (editMode === "edit" && !baseImage) {
+      setError("Please upload a base image for Edit/Inpaint mode.");
       return;
     }
 
@@ -68,7 +110,17 @@ export const StudioTab: React.FC = () => {
         material,
         aspectRatio,
         brandColor,
+        labelMode,
+        brandName,
+        productName,
+        productDetail,
+        packagingText,
+        excludeElements,
         toggles,
+        editMode,
+        baseImage: editMode === "edit" ? baseImage : null,
+        baseImageMimeType: editMode === "edit" ? baseImageMimeType : undefined,
+        maskImage: editMode === "edit" ? maskImage : null,
       };
 
       const res = await fetch("/api/generate", {
@@ -92,6 +144,7 @@ export const StudioTab: React.FC = () => {
         compiledPrompt: data.compiledPrompt || compileStudioPrompt(payload),
         imageData: data.imageData,
         mimeType: data.mimeType || "image/jpeg",
+        mode: editMode,
         parameters: {
           domain,
           lighting,
@@ -99,6 +152,12 @@ export const StudioTab: React.FC = () => {
           material,
           aspectRatio,
           brandColor,
+          labelMode,
+          brandName,
+          productName,
+          productDetail,
+          packagingText,
+          excludeElements,
           toggles: { ...toggles },
         },
       };
@@ -121,7 +180,16 @@ export const StudioTab: React.FC = () => {
       material,
       aspectRatio,
       brandColor,
+      labelMode,
+      brandName,
+      productName,
+      productDetail,
+      packagingText,
+      excludeElements,
       toggles,
+      editMode,
+      baseImage: editMode === "edit" ? baseImage : null,
+      maskImage: editMode === "edit" ? maskImage : null,
     });
     try {
       await navigator.clipboard.writeText(compiled);
@@ -148,8 +216,141 @@ export const StudioTab: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const handleEditActiveImage = () => {
+    if (!activeImageSrc) return;
+    setBaseImage(activeImageSrc, currentGeneration?.mimeType || "image/jpeg");
+    setEditMode("edit");
+  };
+
+  const handleExportManifest = () => {
+    if (gallery.length === 0) return;
+    const manifest = {
+      project: "Imagen Nano Banana Image Studio v2",
+      exportTimestamp: new Date().toISOString(),
+      itemsCount: gallery.length,
+      items: gallery.map((item) => ({
+        id: item.id,
+        filename: `imagen-banana-${item.parameters.domain.toLowerCase().replace(/\s+/g, "-")}-${item.timestamp}.jpg`,
+        timestamp: new Date(item.timestamp).toISOString(),
+        rawPrompt: item.rawPrompt,
+        parameters: item.parameters,
+        compiledPrompt: item.compiledPrompt,
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(manifest, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `screening-manifest-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col gap-6 w-full">
+      {/* Generation Mode Selector */}
+      <div className="flex items-center justify-between p-2 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-subtle-card">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setEditMode("generate")}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              editMode === "generate"
+                ? "bg-amber-500 text-zinc-950 font-bold shadow-md"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Generate (Text-to-Image)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setEditMode("edit")}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              editMode === "edit"
+                ? "bg-amber-500 text-zinc-950 font-bold shadow-md"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Paintbrush className="w-3.5 h-3.5" />
+            <span>Edit & Inpaint (Image-to-Image)</span>
+          </button>
+        </div>
+
+        {gallery.length > 0 && (
+          <button
+            onClick={handleExportManifest}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 hover:text-white rounded-xl border border-zinc-700/60 transition-colors"
+            title="Download screening manifest JSON for human review"
+          >
+            <FileJson className="w-3.5 h-3.5 text-amber-400" />
+            <span>Export Manifest</span>
+          </button>
+        )}
+      </div>
+
+      {/* Edit / Inpaint Canvas Area (Shown when in Edit mode) */}
+      {editMode === "edit" && (
+        <div className="flex flex-col gap-3 p-5 rounded-2xl bg-zinc-900/80 border border-amber-500/30 shadow-subtle-card backdrop-blur-md animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+              <ImagePlus className="w-4 h-4 text-amber-400" />
+              Reference Base Image & Inpainting Mask
+            </h3>
+            {baseImage && (
+              <button
+                type="button"
+                onClick={clearEditImages}
+                className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                Clear Image
+              </button>
+            )}
+          </div>
+
+          {!baseImage ? (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed border-zinc-700 hover:border-amber-500/80 bg-zinc-950/60 cursor-pointer transition-all text-center gap-3 group"
+            >
+              <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                <UploadCloud className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-200">
+                  Tap to upload reference photo from device / camera
+                </p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Supports JPEG, PNG, WebP • Mask drawing canvas will appear automatically
+                </p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <CanvasMask
+                baseImage={baseImage}
+                onMaskChange={(mask) => setMaskImage(mask)}
+                aspectRatio={aspectRatio}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Top Input & Action Section */}
       <div className="flex flex-col gap-3 p-5 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 shadow-subtle-card backdrop-blur-md">
         <div className="flex items-center justify-between">
@@ -158,7 +359,9 @@ export const StudioTab: React.FC = () => {
             className="text-xs font-semibold text-zinc-200 uppercase tracking-wider flex items-center gap-1.5"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            Natural Language Subject Concept
+            {editMode === "edit"
+              ? "Inpainting / Modification Instruction"
+              : "Natural Language Subject Concept"}
           </label>
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded-md border border-zinc-700/60">
@@ -187,25 +390,31 @@ export const StudioTab: React.FC = () => {
                 handleGenerate();
               }
             }}
-            placeholder="Describe your subject or product scene (e.g. Matte white cosmetic lotion tube on textured beige linen with soft morning light)..."
+            placeholder={
+              editMode === "edit"
+                ? "Describe the exact modifications for the masked region (e.g. Replace packaging label with Calyx wordmark and add soft botanical leaf shadows)..."
+                : "Describe your subject or product scene (e.g. Matte white cosmetic lotion tube on textured beige linen with soft morning light)..."
+            }
             className="w-full p-4 rounded-xl text-sm leading-relaxed bg-zinc-950/70 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/80 focus:border-amber-500/80 transition-all resize-none shadow-inner"
           />
         </div>
 
         {/* Quick Sample Inspiration Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          <span className="text-[11px] text-zinc-500 flex-shrink-0">Inspire:</span>
-          {sampleIdeas.map((idea, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => setRawPrompt(idea)}
-              className="px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 text-zinc-300 hover:text-amber-200 transition-colors whitespace-nowrap flex-shrink-0"
-            >
-              {idea.length > 40 ? idea.substring(0, 40) + "..." : idea}
-            </button>
-          ))}
-        </div>
+        {editMode === "generate" && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            <span className="text-[11px] text-zinc-500 flex-shrink-0">Inspire:</span>
+            {sampleIdeas.map((idea, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setRawPrompt(idea)}
+                className="px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 text-zinc-300 hover:text-amber-200 transition-colors whitespace-nowrap flex-shrink-0"
+              >
+                {idea.length > 40 ? idea.substring(0, 40) + "..." : idea}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Action Controls */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-zinc-800/60">
@@ -249,7 +458,11 @@ export const StudioTab: React.FC = () => {
             className="w-full sm:w-auto px-6 text-sm"
           >
             <Wand2 className="w-4 h-4" />
-            <span>Generate with Nano Banana</span>
+            <span>
+              {editMode === "edit"
+                ? "Synthesize Inpaint Edit"
+                : "Generate with Nano Banana"}
+            </span>
           </Button>
         </div>
       </div>
@@ -282,6 +495,15 @@ export const StudioTab: React.FC = () => {
 
           {currentGeneration && (
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleEditActiveImage}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg border border-amber-500/30 transition-colors"
+                title="Send active image to Inpaint/Edit mode"
+              >
+                <Paintbrush className="w-3.5 h-3.5 text-amber-400" />
+                <span>Edit in Inpaint</span>
+              </button>
+
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
                 className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
@@ -321,9 +543,13 @@ export const StudioTab: React.FC = () => {
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-zinc-100">Compiling & Synthesizing Visuals</h4>
+                <h4 className="text-sm font-semibold text-zinc-100">
+                  {editMode === "edit"
+                    ? "Executing Multimodal Inpainting"
+                    : "Compiling & Synthesizing Visuals"}
+                </h4>
                 <p className="text-xs text-zinc-400 mt-1 max-w-sm">
-                  Gemini Nano Banana 2 is rendering photorealistic lighting, materials, and composition...
+                  Gemini Nano Banana 2 is rendering photorealistic lighting, typography, and materials...
                 </p>
               </div>
             </div>
@@ -373,13 +599,16 @@ export const StudioTab: React.FC = () => {
             </div>
             <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-zinc-400">
               <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
+                {currentGeneration.parameters.domain}
+              </span>
+              <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
                 {currentGeneration.parameters.lighting}
               </span>
               <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
-                {currentGeneration.parameters.composition}
-              </span>
-              <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
                 {currentGeneration.parameters.material}
+              </span>
+              <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-amber-300 font-mono">
+                Label: {currentGeneration.parameters.labelMode || "none"}
               </span>
               {currentGeneration.parameters.brandColor && (
                 <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300 flex items-center gap-1 font-mono">

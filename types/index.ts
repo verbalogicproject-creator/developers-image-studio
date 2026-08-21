@@ -24,6 +24,8 @@ export type MaterialOption =
 
 export type AspectRatioOption = "1:1" | "3:4" | "4:3" | "9:16" | "16:9";
 
+export type LabelModeOption = "none" | "wordmark" | "full" | "custom";
+
 export interface OrchestratorToggles {
   negativeSpace: boolean;
   studioIsolation: boolean;
@@ -38,6 +40,12 @@ export interface OrchestratorState {
   material: MaterialOption;
   aspectRatio: AspectRatioOption;
   brandColor: string;
+  labelMode: LabelModeOption;
+  brandName: string;
+  productName: string;
+  productDetail: string;
+  packagingText: string;
+  excludeElements: string;
   toggles: OrchestratorToggles;
 }
 
@@ -48,6 +56,7 @@ export interface GenerationItem {
   compiledPrompt: string;
   imageData: string; // Base64 or data URL
   mimeType: string;
+  mode: "generate" | "edit";
   parameters: {
     domain: DomainOption;
     lighting: LightingOption;
@@ -55,6 +64,12 @@ export interface GenerationItem {
     material: MaterialOption;
     aspectRatio: AspectRatioOption;
     brandColor: string;
+    labelMode: LabelModeOption;
+    brandName: string;
+    productName: string;
+    productDetail: string;
+    packagingText: string;
+    excludeElements: string;
     toggles: OrchestratorToggles;
   };
 }
@@ -67,8 +82,18 @@ export interface GenerateApiRequest {
   material: MaterialOption;
   aspectRatio: AspectRatioOption;
   brandColor?: string;
+  labelMode?: LabelModeOption;
+  brandName?: string;
+  productName?: string;
+  productDetail?: string;
+  packagingText?: string;
+  excludeElements?: string;
   toggles: OrchestratorToggles;
   numberOfImages?: number;
+  editMode?: "generate" | "edit";
+  baseImage?: string | null; // Base64 image
+  baseImageMimeType?: string;
+  maskImage?: string | null; // Base64 mask image
 }
 
 export interface GenerateApiResponse {

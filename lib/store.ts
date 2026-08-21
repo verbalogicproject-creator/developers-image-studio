@@ -6,6 +6,7 @@ import {
   CompositionOption,
   MaterialOption,
   AspectRatioOption,
+  LabelModeOption,
   OrchestratorToggles,
   GenerationItem,
 } from "@/types";
@@ -16,6 +17,17 @@ interface StudioStoreState {
   activeTab: "studio" | "orchestrator";
   setActiveTab: (tab: "studio" | "orchestrator") => void;
 
+  // Mode: Text-to-Image vs Image-to-Image / Inpaint
+  editMode: "generate" | "edit";
+  setEditMode: (editMode: "generate" | "edit") => void;
+
+  baseImage: string | null;
+  baseImageMimeType: string;
+  maskImage: string | null;
+  setBaseImage: (baseImage: string | null, mimeType?: string) => void;
+  setMaskImage: (maskImage: string | null) => void;
+  clearEditImages: () => void;
+
   // Prompt and Orchestrator state
   rawPrompt: string;
   domain: DomainOption;
@@ -25,6 +37,16 @@ interface StudioStoreState {
   aspectRatio: AspectRatioOption;
   brandColor: string;
   toggles: OrchestratorToggles;
+
+  // Label & Typography Control
+  labelMode: LabelModeOption;
+  brandName: string;
+  productName: string;
+  productDetail: string;
+  packagingText: string;
+
+  // Negative / Exclusion Constraints
+  excludeElements: string;
 
   // Gallery & Generation state
   gallery: GenerationItem[];
@@ -41,6 +63,14 @@ interface StudioStoreState {
   setAspectRatio: (aspectRatio: AspectRatioOption) => void;
   setBrandColor: (color: string) => void;
   setToggle: (key: keyof OrchestratorToggles, value: boolean) => void;
+  
+  setLabelMode: (mode: LabelModeOption) => void;
+  setBrandName: (brand: string) => void;
+  setProductName: (product: string) => void;
+  setProductDetail: (detail: string) => void;
+  setPackagingText: (text: string) => void;
+  setExcludeElements: (text: string) => void;
+
   setIsGenerating: (isGenerating: boolean) => void;
   setError: (error: string | null) => void;
   setCurrentGeneration: (item: GenerationItem | null) => void;
@@ -56,7 +86,19 @@ export const useStudioStore = create<StudioStoreState>()(
       activeTab: "studio",
       setActiveTab: (activeTab) => set({ activeTab }),
 
-      rawPrompt: "Minimalist skincare serum bottle resting on soft beige cashmere folds with delicate dried floral branch shadows",
+      editMode: "generate",
+      setEditMode: (editMode) => set({ editMode }),
+
+      baseImage: null,
+      baseImageMimeType: "image/jpeg",
+      maskImage: null,
+      setBaseImage: (baseImage, mimeType = "image/jpeg") =>
+        set({ baseImage, baseImageMimeType: mimeType }),
+      setMaskImage: (maskImage) => set({ maskImage }),
+      clearEditImages: () => set({ baseImage: null, maskImage: null }),
+
+      rawPrompt:
+        "Minimalist skincare serum bottle resting on soft beige cashmere folds with delicate dried floral branch shadows",
       domain: "Skincare",
       lighting: "Diffused Natural",
       composition: "Macro/Close-up",
@@ -69,6 +111,15 @@ export const useStudioStore = create<StudioStoreState>()(
         naturalContext: true,
       },
 
+      labelMode: "none",
+      brandName: "Calyx",
+      productName: "Bare Barrier Serum",
+      productDetail: "50ml / 1.7 fl oz",
+      packagingText: "",
+
+      excludeElements:
+        "no visible people or hands, no watermark-like artifacts, no props not implied by the subject concept",
+
       gallery: [],
       currentGeneration: null,
       isGenerating: false,
@@ -76,7 +127,8 @@ export const useStudioStore = create<StudioStoreState>()(
 
       setRawPrompt: (rawPrompt) => set({ rawPrompt }),
       setDomain: (domain) => {
-        const defaultColor = DOMAIN_VOCABULARIES[domain]?.defaultColor || "#E8DFD8";
+        const defaultColor =
+          DOMAIN_VOCABULARIES[domain]?.defaultColor || "#E8DFD8";
         set({ domain, brandColor: defaultColor });
       },
       setLighting: (lighting) => set({ lighting }),
@@ -92,17 +144,23 @@ export const useStudioStore = create<StudioStoreState>()(
           },
         })),
 
+      setLabelMode: (labelMode) => set({ labelMode }),
+      setBrandName: (brandName) => set({ brandName }),
+      setProductName: (productName) => set({ productName }),
+      setProductDetail: (productDetail) => set({ productDetail }),
+      setPackagingText: (packagingText) => set({ packagingText }),
+      setExcludeElements: (excludeElements) => set({ excludeElements }),
+
       setIsGenerating: (isGenerating) => set({ isGenerating }),
       setError: (error) => set({ error }),
       setCurrentGeneration: (currentGeneration) => set({ currentGeneration }),
 
       addGeneration: (item) =>
         set((state) => {
-          // Keep the latest 10 generations in local store
           const updatedGallery = [
             item,
             ...state.gallery.filter((g) => g.id !== item.id),
-          ].slice(0, 10);
+          ].slice(0, 15);
           return {
             gallery: updatedGallery,
             currentGeneration: item,
@@ -128,8 +186,15 @@ export const useStudioStore = create<StudioStoreState>()(
           material: item.parameters.material,
           aspectRatio: item.parameters.aspectRatio,
           brandColor: item.parameters.brandColor,
+          labelMode: item.parameters.labelMode || "none",
+          brandName: item.parameters.brandName || "Calyx",
+          productName: item.parameters.productName || "Bare Barrier Serum",
+          productDetail: item.parameters.productDetail || "50ml / 1.7 fl oz",
+          packagingText: item.parameters.packagingText || "",
+          excludeElements: item.parameters.excludeElements || "",
           toggles: { ...item.parameters.toggles },
           currentGeneration: item,
+          editMode: item.mode || "generate",
         }),
     }),
     {
@@ -143,6 +208,12 @@ export const useStudioStore = create<StudioStoreState>()(
         material: state.material,
         aspectRatio: state.aspectRatio,
         brandColor: state.brandColor,
+        labelMode: state.labelMode,
+        brandName: state.brandName,
+        productName: state.productName,
+        productDetail: state.productDetail,
+        packagingText: state.packagingText,
+        excludeElements: state.excludeElements,
         toggles: state.toggles,
         gallery: state.gallery,
       }),

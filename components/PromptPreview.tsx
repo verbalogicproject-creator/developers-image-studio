@@ -14,7 +14,16 @@ export const PromptPreview: React.FC = () => {
     material,
     aspectRatio,
     brandColor,
+    labelMode,
+    brandName,
+    productName,
+    productDetail,
+    packagingText,
+    excludeElements,
     toggles,
+    editMode,
+    baseImage,
+    maskImage,
   } = useStudioStore();
 
   const [copiedPrompt, setCopiedPrompt] = useState(false);
@@ -29,10 +38,19 @@ export const PromptPreview: React.FC = () => {
     material,
     aspectRatio,
     brandColor,
+    labelMode,
+    brandName,
+    productName,
+    productDetail,
+    packagingText,
+    excludeElements,
     toggles,
+    editMode,
+    baseImage,
+    maskImage,
   });
 
-  const curlCommand = `curl -X POST http://localhost:3000/api/generate \\
+  const curlCommand = `curl -X POST http://localhost:3001/api/generate \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(
     {
@@ -43,7 +61,14 @@ export const PromptPreview: React.FC = () => {
       material,
       aspectRatio,
       brandColor,
+      labelMode,
+      brandName,
+      productName,
+      productDetail,
+      packagingText,
+      excludeElements,
       toggles,
+      editMode,
     },
     null,
     2

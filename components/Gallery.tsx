@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Download, Trash2, RotateCcw, Clock, Sparkles, Image as ImageIcon } from "lucide-react";
+import { Download, Trash2, RotateCcw, Clock, Sparkles, Image as ImageIcon, Paintbrush } from "lucide-react";
 import { useStudioStore } from "@/lib/store";
 import { GenerationItem } from "@/types";
 
@@ -13,6 +13,8 @@ export const Gallery: React.FC = () => {
     removeGeneration,
     clearGallery,
     loadParameters,
+    setBaseImage,
+    setEditMode,
     setActiveTab,
   } = useStudioStore();
 
@@ -33,6 +35,16 @@ export const Gallery: React.FC = () => {
     loadParameters(item);
   };
 
+  const handleEditInInpaint = (item: GenerationItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const imgData = item.imageData.startsWith("data:")
+      ? item.imageData
+      : `data:${item.mimeType};base64,${item.imageData}`;
+    setBaseImage(imgData, item.mimeType || "image/jpeg");
+    setEditMode("edit");
+    setActiveTab("studio");
+  };
+
   if (gallery.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 rounded-2xl bg-zinc-900/40 border border-dashed border-zinc-800 text-center">
@@ -41,7 +53,7 @@ export const Gallery: React.FC = () => {
         </div>
         <h4 className="text-sm font-semibold text-zinc-300">No Generations in Local Cache</h4>
         <p className="text-xs text-zinc-500 max-w-sm mt-1">
-          Your generated images and their orchestrator parameters will be cached here automatically across app sessions.
+          Your generated images, packaging parameters, and prompt metadata will be cached here automatically across app sessions.
         </p>
       </div>
     );
@@ -57,7 +69,7 @@ export const Gallery: React.FC = () => {
             Cached Generation History
           </h3>
           <span className="px-2 py-0.5 text-[11px] font-mono bg-zinc-800 text-zinc-400 rounded-full border border-zinc-700/60">
-            {gallery.length}/10
+            {gallery.length}/15
           </span>
         </div>
 
@@ -102,18 +114,33 @@ export const Gallery: React.FC = () => {
                   <span className="px-1.5 py-0.5 text-[10px] font-mono font-medium bg-black/70 text-zinc-200 backdrop-blur-sm rounded border border-white/10">
                     {item.parameters.aspectRatio}
                   </span>
+                  {item.mode === "edit" && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-mono font-medium bg-amber-500/80 text-black backdrop-blur-sm rounded">
+                      Inpaint
+                    </span>
+                  )}
                 </div>
 
                 {/* Action Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 gap-1.5">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 gap-1.5">
                   <div className="flex items-center justify-between">
-                    <button
-                      onClick={(e) => handleRestore(item, e)}
-                      title="Load Parameters to Studio"
-                      className="p-1.5 rounded-lg bg-zinc-900/90 text-amber-400 hover:bg-amber-500 hover:text-black transition-colors"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => handleRestore(item, e)}
+                        title="Load Parameters to Studio"
+                        className="p-1.5 rounded-lg bg-zinc-900/90 text-amber-400 hover:bg-amber-500 hover:text-black transition-colors"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => handleEditInInpaint(item, e)}
+                        title="Open in Inpaint / Edit"
+                        className="p-1.5 rounded-lg bg-zinc-900/90 text-amber-300 hover:bg-amber-400 hover:text-black transition-colors"
+                      >
+                        <Paintbrush className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
                     <div className="flex items-center gap-1">
                       <button
                         onClick={(e) => handleDownload(item, e)}

@@ -12,7 +12,7 @@ export const GenerateRequestSchema = z.object({
   rawPrompt: z
     .string()
     .min(1, "Please provide a natural language prompt")
-    .max(2000, "Prompt is too long (max 2000 characters)"),
+    .max(2500, "Prompt is too long (max 2500 characters)"),
   domain: z.enum([
     "Skincare",
     "Fine Jewelry",
@@ -43,8 +43,25 @@ export const GenerateRequestSchema = z.object({
     .regex(hexColorRegex, "Must be a valid hex color (e.g., #D4AF37)")
     .optional()
     .or(z.literal("")),
+  
+  // Label & Typography Control
+  labelMode: z.enum(["none", "wordmark", "full", "custom"]).default("none").optional(),
+  brandName: z.string().optional().default(""),
+  productName: z.string().optional().default(""),
+  productDetail: z.string().optional().default(""),
+  packagingText: z.string().optional().default(""),
+
+  // Negative / Exclusion Constraints
+  excludeElements: z.string().optional().default(""),
+
   toggles: OrchestratorTogglesSchema,
   numberOfImages: z.number().int().min(1).max(4).default(1).optional(),
+
+  // Image-to-Image & Inpainting Mode
+  editMode: z.enum(["generate", "edit"]).default("generate").optional(),
+  baseImage: z.string().nullable().optional(),
+  baseImageMimeType: z.string().optional(),
+  maskImage: z.string().nullable().optional(),
 });
 
 export type GenerateRequestInput = z.infer<typeof GenerateRequestSchema>;
