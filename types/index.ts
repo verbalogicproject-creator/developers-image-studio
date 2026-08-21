@@ -1,3 +1,6 @@
+export type PipelineMode = "ecommerce" | "social_editorial";
+
+// E-Commerce Types
 export type DomainOption =
   | "Skincare"
   | "Fine Jewelry"
@@ -32,21 +35,65 @@ export interface OrchestratorToggles {
   naturalContext: boolean;
 }
 
+// Social & Editorial Types
+export type PostCategory =
+  | "deep_tech"
+  | "quantum_cosmology"
+  | "ai_dev_marketing"
+  | "pop_science"
+  | "infographic_diagram";
+
+export type TypographyStyle =
+  | "bold_impact_sans"
+  | "editorial_luxury_serif"
+  | "clean_tech_grotesk"
+  | "diagram_mono";
+
+export type TextPlacement =
+  | "bottom_third_scrim"
+  | "top_header_clean"
+  | "split_top_bottom"
+  | "integrated_billboard";
+
+export type ArtisticStyle =
+  | "luminescent_particles"
+  | "cosmic_synapses"
+  | "3d_matte_clay"
+  | "scientific_schematic";
+
+export type BadgePosition = "top_left" | "top_right";
+
 export interface OrchestratorState {
+  // Master Pipeline
+  pipelineMode: PipelineMode;
+
+  // Shared
   rawPrompt: string;
+  aspectRatio: AspectRatioOption;
+  brandColor: string;
+  excludeElements: string;
+
+  // E-Commerce Specific
   domain: DomainOption;
   lighting: LightingOption;
   composition: CompositionOption;
   material: MaterialOption;
-  aspectRatio: AspectRatioOption;
-  brandColor: string;
   labelMode: LabelModeOption;
   brandName: string;
   productName: string;
   productDetail: string;
   packagingText: string;
-  excludeElements: string;
   toggles: OrchestratorToggles;
+
+  // Social & Editorial Specific
+  postCategory: PostCategory;
+  headlineText: string;
+  publicationBadge: string;
+  badgePosition: BadgePosition;
+  authorBadge: string;
+  typographyStyle: TypographyStyle;
+  textPlacement: TextPlacement;
+  artisticStyle: ArtisticStyle;
 }
 
 export interface GenerationItem {
@@ -57,48 +104,77 @@ export interface GenerationItem {
   imageData: string; // Base64 or data URL
   mimeType: string;
   mode: "generate" | "edit";
+  pipelineMode: PipelineMode;
   parameters: {
-    domain: DomainOption;
-    lighting: LightingOption;
-    composition: CompositionOption;
-    material: MaterialOption;
+    pipelineMode: PipelineMode;
     aspectRatio: AspectRatioOption;
     brandColor: string;
-    labelMode: LabelModeOption;
-    brandName: string;
-    productName: string;
-    productDetail: string;
-    packagingText: string;
     excludeElements: string;
-    toggles: OrchestratorToggles;
+
+    // E-commerce
+    domain?: DomainOption;
+    lighting?: LightingOption;
+    composition?: CompositionOption;
+    material?: MaterialOption;
+    labelMode?: LabelModeOption;
+    brandName?: string;
+    productName?: string;
+    productDetail?: string;
+    packagingText?: string;
+    toggles?: OrchestratorToggles;
+
+    // Social Editorial
+    postCategory?: PostCategory;
+    headlineText?: string;
+    publicationBadge?: string;
+    badgePosition?: BadgePosition;
+    authorBadge?: string;
+    typographyStyle?: TypographyStyle;
+    textPlacement?: TextPlacement;
+    artisticStyle?: ArtisticStyle;
   };
 }
 
 export interface GenerateApiRequest {
+  pipelineMode?: PipelineMode;
   rawPrompt: string;
-  domain: DomainOption;
-  lighting: LightingOption;
-  composition: CompositionOption;
-  material: MaterialOption;
   aspectRatio: AspectRatioOption;
   brandColor?: string;
+  excludeElements?: string;
+  numberOfImages?: number;
+
+  // Inpainting / Image-to-Image
+  editMode?: "generate" | "edit";
+  baseImage?: string | null;
+  baseImageMimeType?: string;
+  maskImage?: string | null;
+
+  // E-Commerce
+  domain?: DomainOption;
+  lighting?: LightingOption;
+  composition?: CompositionOption;
+  material?: MaterialOption;
   labelMode?: LabelModeOption;
   brandName?: string;
   productName?: string;
   productDetail?: string;
   packagingText?: string;
-  excludeElements?: string;
-  toggles: OrchestratorToggles;
-  numberOfImages?: number;
-  editMode?: "generate" | "edit";
-  baseImage?: string | null; // Base64 image
-  baseImageMimeType?: string;
-  maskImage?: string | null; // Base64 mask image
+  toggles?: OrchestratorToggles;
+
+  // Social Editorial
+  postCategory?: PostCategory;
+  headlineText?: string;
+  publicationBadge?: string;
+  badgePosition?: BadgePosition;
+  authorBadge?: string;
+  typographyStyle?: TypographyStyle;
+  textPlacement?: TextPlacement;
+  artisticStyle?: ArtisticStyle;
 }
 
 export interface GenerateApiResponse {
   success: boolean;
-  imageData?: string; // base64
+  imageData?: string;
   mimeType?: string;
   compiledPrompt?: string;
   error?: string;

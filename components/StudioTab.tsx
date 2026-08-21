@@ -14,10 +14,11 @@ import {
   Info,
   ImagePlus,
   Paintbrush,
-  Layers,
   UploadCloud,
   FileJson,
   X,
+  Share2,
+  ShoppingBag,
 } from "lucide-react";
 import { useStudioStore } from "@/lib/store";
 import { compileStudioPrompt } from "@/lib/compiler";
@@ -28,21 +29,36 @@ import { CanvasMask } from "./CanvasMask";
 
 export const StudioTab: React.FC = () => {
   const {
+    pipelineMode,
     rawPrompt,
     setRawPrompt,
+    aspectRatio,
+    brandColor,
+    excludeElements,
+
+    // E-Commerce
     domain,
     lighting,
     composition,
     material,
-    aspectRatio,
-    brandColor,
     labelMode,
     brandName,
     productName,
     productDetail,
     packagingText,
-    excludeElements,
     toggles,
+
+    // Social Editorial
+    postCategory,
+    headlineText,
+    publicationBadge,
+    badgePosition,
+    authorBadge,
+    typographyStyle,
+    textPlacement,
+    artisticStyle,
+
+    // Edit / Inpaint Mode
     editMode,
     setEditMode,
     baseImage,
@@ -51,6 +67,7 @@ export const StudioTab: React.FC = () => {
     setBaseImage,
     setMaskImage,
     clearEditImages,
+
     isGenerating,
     setIsGenerating,
     error,
@@ -66,12 +83,24 @@ export const StudioTab: React.FC = () => {
   const [showPromptDetails, setShowPromptDetails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const sampleIdeas = [
+  const ecommerceIdeas = [
     "Matte white cosmetic tube on folded beige cashmere textile with soft window sunlight",
     "Amber glass dropper serum bottle resting beside delicate dried flora with warm raking shadows",
     "Flawless solitaire diamond ring on deep obsidian velvet plinth with micro-facet caustics",
     "Vintage 1982 Bordeaux wine bottle with aged wax seal resting on French oak cellar barrel",
   ];
+
+  const socialEditorialIdeas = [
+    "Quantum singularity machine with luminescent golden particle vortex and fiber optic threads",
+    "Cosmic synaptic consciousness — neural bioluminescent filaments interwoven with cobalt nebulae",
+    "3D matte vinyl AI dev mascot coding on floating holographic neon telemetry interfaces",
+    "Annotated scientific quantum wave spectrum with cyan blueprint schematic grid",
+  ];
+
+  const activeSampleIdeas =
+    pipelineMode === "social_editorial"
+      ? socialEditorialIdeas
+      : ecommerceIdeas;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -86,6 +115,40 @@ export const StudioTab: React.FC = () => {
     };
     reader.readAsDataURL(file);
   };
+
+  const getPayload = () => ({
+    pipelineMode,
+    rawPrompt,
+    aspectRatio,
+    brandColor,
+    excludeElements,
+    editMode,
+    baseImage: editMode === "edit" ? baseImage : null,
+    baseImageMimeType: editMode === "edit" ? baseImageMimeType : undefined,
+    maskImage: editMode === "edit" ? maskImage : null,
+
+    // E-Commerce
+    domain,
+    lighting,
+    composition,
+    material,
+    labelMode,
+    brandName,
+    productName,
+    productDetail,
+    packagingText,
+    toggles,
+
+    // Social Editorial
+    postCategory,
+    headlineText,
+    publicationBadge,
+    badgePosition,
+    authorBadge,
+    typographyStyle,
+    textPlacement,
+    artisticStyle,
+  });
 
   const handleGenerate = async () => {
     if (!rawPrompt.trim()) {
@@ -102,26 +165,7 @@ export const StudioTab: React.FC = () => {
     setError(null);
 
     try {
-      const payload = {
-        rawPrompt,
-        domain,
-        lighting,
-        composition,
-        material,
-        aspectRatio,
-        brandColor,
-        labelMode,
-        brandName,
-        productName,
-        productDetail,
-        packagingText,
-        excludeElements,
-        toggles,
-        editMode,
-        baseImage: editMode === "edit" ? baseImage : null,
-        baseImageMimeType: editMode === "edit" ? baseImageMimeType : undefined,
-        maskImage: editMode === "edit" ? maskImage : null,
-      };
+      const payload = getPayload();
 
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -138,59 +182,58 @@ export const StudioTab: React.FC = () => {
       }
 
       const newGen = {
-        id: "gen-" + Date.now() + "-" + Math.random().toString(36).substring(2, 7),
+        id:
+          "gen-" +
+          Date.now() +
+          "-" +
+          Math.random().toString(36).substring(2, 7),
         timestamp: Date.now(),
         rawPrompt,
         compiledPrompt: data.compiledPrompt || compileStudioPrompt(payload),
         imageData: data.imageData,
         mimeType: data.mimeType || "image/jpeg",
         mode: editMode,
+        pipelineMode,
         parameters: {
+          pipelineMode,
+          aspectRatio,
+          brandColor,
+          excludeElements,
           domain,
           lighting,
           composition,
           material,
-          aspectRatio,
-          brandColor,
           labelMode,
           brandName,
           productName,
           productDetail,
           packagingText,
-          excludeElements,
           toggles: { ...toggles },
+          postCategory,
+          headlineText,
+          publicationBadge,
+          badgePosition,
+          authorBadge,
+          typographyStyle,
+          textPlacement,
+          artisticStyle,
         },
       };
 
       addGeneration(newGen);
     } catch (err: any) {
       console.error("Generation error:", err);
-      setError(err.message || "An unexpected error occurred while generating the image.");
+      setError(
+        err.message ||
+          "An unexpected error occurred while generating the image."
+      );
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleCopyCompiled = async () => {
-    const compiled = compileStudioPrompt({
-      rawPrompt,
-      domain,
-      lighting,
-      composition,
-      material,
-      aspectRatio,
-      brandColor,
-      labelMode,
-      brandName,
-      productName,
-      productDetail,
-      packagingText,
-      excludeElements,
-      toggles,
-      editMode,
-      baseImage: editMode === "edit" ? baseImage : null,
-      maskImage: editMode === "edit" ? maskImage : null,
-    });
+    const compiled = compileStudioPrompt(getPayload());
     try {
       await navigator.clipboard.writeText(compiled);
       setCopied(true);
@@ -210,7 +253,11 @@ export const StudioTab: React.FC = () => {
     if (!currentGeneration || !activeImageSrc) return;
     const link = document.createElement("a");
     link.href = activeImageSrc;
-    link.download = `imagen-banana-${currentGeneration.parameters.domain.toLowerCase().replace(/\s+/g, "-")}-${currentGeneration.timestamp}.jpg`;
+    const prefix =
+      currentGeneration.parameters.pipelineMode === "social_editorial"
+        ? `editorial-${currentGeneration.parameters.postCategory}`
+        : `ecommerce-${currentGeneration.parameters.domain?.toLowerCase()}`;
+    link.download = `imagen-banana-${prefix}-${currentGeneration.timestamp}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -226,11 +273,12 @@ export const StudioTab: React.FC = () => {
     if (gallery.length === 0) return;
     const manifest = {
       project: "Imagen Nano Banana Image Studio v2",
+      pipelineMode,
       exportTimestamp: new Date().toISOString(),
       itemsCount: gallery.length,
       items: gallery.map((item) => ({
         id: item.id,
-        filename: `imagen-banana-${item.parameters.domain.toLowerCase().replace(/\s+/g, "-")}-${item.timestamp}.jpg`,
+        filename: `imagen-banana-${item.parameters.pipelineMode}-${item.timestamp}.jpg`,
         timestamp: new Date(item.timestamp).toISOString(),
         rawPrompt: item.rawPrompt,
         parameters: item.parameters,
@@ -253,40 +301,59 @@ export const StudioTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      {/* Generation Mode Selector */}
-      <div className="flex items-center justify-between p-2 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-subtle-card">
-        <div className="flex items-center gap-1.5 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={() => setEditMode("generate")}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              editMode === "generate"
-                ? "bg-amber-500 text-zinc-950 font-bold shadow-md"
-                : "text-zinc-400 hover:text-zinc-200"
+      {/* Top Banner: Active Pipeline Info + Mode Selector */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-subtle-card gap-3">
+        <div className="flex items-center gap-2">
+          <div
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
+              pipelineMode === "social_editorial"
+                ? "bg-purple-500/10 text-purple-300 border border-purple-500/30"
+                : "bg-amber-500/10 text-amber-300 border border-amber-500/30"
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Generate (Text-to-Image)</span>
-          </button>
+            {pipelineMode === "social_editorial" ? (
+              <>
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Social Editorial Pipeline</span>
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>E-Commerce Studio Pipeline</span>
+              </>
+            )}
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setEditMode("edit")}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              editMode === "edit"
-                ? "bg-amber-500 text-zinc-950 font-bold shadow-md"
-                : "text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <Paintbrush className="w-3.5 h-3.5" />
-            <span>Edit & Inpaint (Image-to-Image)</span>
-          </button>
+          <div className="flex items-center bg-zinc-950 p-0.5 rounded-lg border border-zinc-800 text-xs">
+            <button
+              type="button"
+              onClick={() => setEditMode("generate")}
+              className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+                editMode === "generate"
+                  ? "bg-amber-500 text-zinc-950 font-bold shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Text-to-Image
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditMode("edit")}
+              className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+                editMode === "edit"
+                  ? "bg-amber-500 text-zinc-950 font-bold shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Inpaint / Edit
+            </button>
+          </div>
         </div>
 
         {gallery.length > 0 && (
           <button
             onClick={handleExportManifest}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 hover:text-white rounded-xl border border-zinc-700/60 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 hover:text-white rounded-xl border border-zinc-700/60 transition-colors"
             title="Download screening manifest JSON for human review"
           >
             <FileJson className="w-3.5 h-3.5 text-amber-400" />
@@ -361,11 +428,15 @@ export const StudioTab: React.FC = () => {
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             {editMode === "edit"
               ? "Inpainting / Modification Instruction"
+              : pipelineMode === "social_editorial"
+              ? "Core Scientific / Conceptual Narrative Concept"
               : "Natural Language Subject Concept"}
           </label>
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded-md border border-zinc-700/60">
-              {domain} • {aspectRatio}
+              {pipelineMode === "social_editorial"
+                ? `${postCategory} • ${aspectRatio}`
+                : `${domain} • ${aspectRatio}`}
             </span>
             <button
               onClick={() => setActiveTab("orchestrator")}
@@ -392,7 +463,9 @@ export const StudioTab: React.FC = () => {
             }}
             placeholder={
               editMode === "edit"
-                ? "Describe the exact modifications for the masked region (e.g. Replace packaging label with Calyx wordmark and add soft botanical leaf shadows)..."
+                ? "Describe the exact modifications for the masked region..."
+                : pipelineMode === "social_editorial"
+                ? "Describe the high-concept visual (e.g. Glowing golden singularity particle vortex funneling through cosmic spacetime grid with luminescent fiber optics)..."
                 : "Describe your subject or product scene (e.g. Matte white cosmetic lotion tube on textured beige linen with soft morning light)..."
             }
             className="w-full p-4 rounded-xl text-sm leading-relaxed bg-zinc-950/70 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/80 focus:border-amber-500/80 transition-all resize-none shadow-inner"
@@ -403,7 +476,7 @@ export const StudioTab: React.FC = () => {
         {editMode === "generate" && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
             <span className="text-[11px] text-zinc-500 flex-shrink-0">Inspire:</span>
-            {sampleIdeas.map((idea, idx) => (
+            {activeSampleIdeas.map((idea, idx) => (
               <button
                 key={idx}
                 type="button"
@@ -461,6 +534,8 @@ export const StudioTab: React.FC = () => {
             <span>
               {editMode === "edit"
                 ? "Synthesize Inpaint Edit"
+                : pipelineMode === "social_editorial"
+                ? "Synthesize Social Post Visual"
                 : "Generate with Nano Banana"}
             </span>
           </Button>
@@ -488,7 +563,10 @@ export const StudioTab: React.FC = () => {
             <span>Active Viewport</span>
             {currentGeneration && (
               <span className="text-[11px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                {currentGeneration.parameters.domain} • {currentGeneration.parameters.aspectRatio}
+                {currentGeneration.parameters.pipelineMode === "social_editorial"
+                  ? currentGeneration.parameters.postCategory
+                  : currentGeneration.parameters.domain}{" "}
+                • {currentGeneration.parameters.aspectRatio}
               </span>
             )}
           </h3>
@@ -546,6 +624,8 @@ export const StudioTab: React.FC = () => {
                 <h4 className="text-sm font-semibold text-zinc-100">
                   {editMode === "edit"
                     ? "Executing Multimodal Inpainting"
+                    : pipelineMode === "social_editorial"
+                    ? "Synthesizing High-Impact Social Graphic"
                     : "Compiling & Synthesizing Visuals"}
                 </h4>
                 <p className="text-xs text-zinc-400 mt-1 max-w-sm">
@@ -598,18 +678,34 @@ export const StudioTab: React.FC = () => {
               </span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-zinc-400">
-              <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
-                {currentGeneration.parameters.domain}
-              </span>
-              <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
-                {currentGeneration.parameters.lighting}
-              </span>
-              <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
-                {currentGeneration.parameters.material}
-              </span>
               <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-amber-300 font-mono">
-                Label: {currentGeneration.parameters.labelMode || "none"}
+                Mode: {currentGeneration.parameters.pipelineMode || "ecommerce"}
               </span>
+              {currentGeneration.parameters.pipelineMode === "social_editorial" ? (
+                <>
+                  <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
+                    {currentGeneration.parameters.postCategory}
+                  </span>
+                  <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
+                    {currentGeneration.parameters.typographyStyle}
+                  </span>
+                  <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
+                    {currentGeneration.parameters.textPlacement}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
+                    {currentGeneration.parameters.domain}
+                  </span>
+                  <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
+                    {currentGeneration.parameters.lighting}
+                  </span>
+                  <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300">
+                    {currentGeneration.parameters.material}
+                  </span>
+                </>
+              )}
               {currentGeneration.parameters.brandColor && (
                 <span className="px-2 py-0.5 bg-zinc-900 rounded border border-zinc-800 text-zinc-300 flex items-center gap-1 font-mono">
                   <span

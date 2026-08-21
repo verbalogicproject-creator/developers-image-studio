@@ -4,7 +4,16 @@ import {
   CompositionOption,
   MaterialOption,
   AspectRatioOption,
+  PostCategory,
+  TypographyStyle,
+  TextPlacement,
+  ArtisticStyle,
+  BadgePosition,
 } from "@/types";
+
+// ==========================================
+// E-COMMERCE & PRODUCT STUDIO CONSTANTS
+// ==========================================
 
 export const DOMAIN_OPTIONS: DomainOption[] = [
   "Skincare",
@@ -127,4 +136,178 @@ export const MATERIAL_VOCABULARIES: Record<MaterialOption, string> = {
     "Pristine high-gloss mirror lacquer finish, micro-droplets of fresh cold condensation beading on glass surfaces, crisp specular light reflections.",
   "Textured/Organic":
     "Raw tactile surfaces, heavy woven cashmere linen weave, porous unpolished travertine stone, authentic organic wood grain textures.",
+};
+
+// ==========================================
+// SOCIAL MEDIA & EDITORIAL PIPELINE CONSTANTS
+// ==========================================
+
+export const POST_CATEGORIES: {
+  value: PostCategory;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "deep_tech",
+    label: "Deep Tech & Particle Physics",
+    description: "High-contrast quantum machines, fiber optics, laser matrices, cosmic dark voids.",
+  },
+  {
+    value: "quantum_cosmology",
+    label: "Quantum Consciousness & Singularity",
+    description: "Golden particle vortexes, singularity funnels, dimensional spacetime fabric.",
+  },
+  {
+    value: "ai_dev_marketing",
+    label: "3D AI & Developer Marketing",
+    description: "Stylized 3D matte characters, holographic UI cards, author attribution badges.",
+  },
+  {
+    value: "pop_science",
+    label: "Provocative Pop Science & Mechanics",
+    description: "Viral headlines, glowing neural synapses, bold bottom-scrim typography.",
+  },
+  {
+    value: "infographic_diagram",
+    label: "Diagrammatic & Infographic Narratives",
+    description: "Annotated scientific wave spectrums, schematic blueprints, contrast-backed split text.",
+  },
+];
+
+export const TYPOGRAPHY_STYLES: {
+  value: TypographyStyle;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "bold_impact_sans",
+    label: "Bold Impact Sans (All-Caps)",
+    description: "Heavy grotesque sans-serif, maximum punch and viral readability.",
+  },
+  {
+    value: "editorial_luxury_serif",
+    label: "Editorial Luxury Serif",
+    description: "Sophisticated high-contrast display serif for intellectual thought leadership.",
+  },
+  {
+    value: "clean_tech_grotesk",
+    label: "Modern Tech Grotesk",
+    description: "Minimalist Swiss neo-grotesk with razor-sharp geometric kerning.",
+  },
+  {
+    value: "diagram_mono",
+    label: "Technical Monospace",
+    description: "Blueprint schematic monospace font for scientific data callouts.",
+  },
+];
+
+export const TEXT_PLACEMENTS: {
+  value: TextPlacement;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "bottom_third_scrim",
+    label: "Bottom Third (Dark Gradient Scrim)",
+    description: "Smooth dark bottom scrim ensuring 100% headline legibility over intense visuals.",
+  },
+  {
+    value: "top_header_clean",
+    label: "Top Header Banner",
+    description: "Header band in top margin, leaving bottom scene wide and expansive.",
+  },
+  {
+    value: "split_top_bottom",
+    label: "Split Layout (Bug Top, Hook Bottom)",
+    description: "Publication bug placed in top margin, heavy headline anchored at bottom.",
+  },
+  {
+    value: "integrated_billboard",
+    label: "Integrated Depth Billboard",
+    description: "Typography woven spatially behind foreground elements and light caustics.",
+  },
+];
+
+export const ARTISTIC_STYLES: {
+  value: ArtisticStyle;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "luminescent_particles",
+    label: "Luminescent Fiber Optics & Caustics",
+    description: "Glowing optic filaments, golden particle streams, and volumetric energy beams.",
+  },
+  {
+    value: "cosmic_synapses",
+    label: "Cosmic Synapses & Neural Nebulae",
+    description: "Bioluminescent axon networks interwoven with celestial star clusters.",
+  },
+  {
+    value: "3d_matte_clay",
+    label: "3D Matte Clay & Neon Hologram",
+    description: "Stylized vinyl character mascot, soft claymation, floating cyan HUD widgets.",
+  },
+  {
+    value: "scientific_schematic",
+    label: "Technical Scientific Blueprint",
+    description: "Precision vector grids, quantum wave spectrums, annotated schematic overlays.",
+  },
+];
+
+export const BADGE_POSITIONS: { value: BadgePosition; label: string }[] = [
+  { value: "top_left", label: "Top-Left Corner" },
+  { value: "top_right", label: "Top-Right Corner" },
+];
+
+export const ARTISTIC_STYLE_VOCABULARIES: Record<
+  ArtisticStyle,
+  { label: string; lexicon: string; defaultColor: string }
+> = {
+  luminescent_particles: {
+    label: "Luminescent Fiber Optics & Caustics",
+    lexicon:
+      "Hyper-detailed glowing optic fibers, golden amber energy vortex, illuminated particle streams against a deep obsidian space void, volumetric cinematic lighting, subsurface caustic scattering, radiant refraction trails.",
+    defaultColor: "#F59E0B",
+  },
+  cosmic_synapses: {
+    label: "Cosmic Synapses & Neural Nebulae",
+    lexicon:
+      "Intricate glowing neural synaptic networks interwoven with deep celestial nebulae, bioluminescent electric cyan and violet axon filaments, deep obsidian and cobalt space background with radiant star clusters and dimensional light grids.",
+    defaultColor: "#8B5CF6",
+  },
+  "3d_matte_clay": {
+    label: "3D Matte Clay & Neon Hologram",
+    lexicon:
+      "Stylized 3D matte vinyl character, soft tactile claymation textures, isometric developer workspace, floating glowing cyan and purple holographic UI cards, studio softbox ambient illumination, delightful high-contrast character design.",
+    defaultColor: "#06B6D4",
+  },
+  scientific_schematic: {
+    label: "Technical Scientific Blueprint",
+    lexicon:
+      "Clean diagrammatic vector aesthetics, annotated quantum wave spectrums, technical blueprint geometry, crisp precision lines with subtle cyan/emerald neon grid overlays on deep carbon substrate.",
+    defaultColor: "#10B981",
+  },
+};
+
+export const TYPOGRAPHY_STYLE_VOCABULARIES: Record<TypographyStyle, string> = {
+  bold_impact_sans:
+    "Heavy grotesque bold sans-serif (all-caps impact), ultra-legible, crisp kerning, commanding authority, zero digital aliasing.",
+  editorial_luxury_serif:
+    "High-contrast editorial display serif, refined calligraphic elegance, sophisticated intellectual authority, balanced optical weights.",
+  clean_tech_grotesk:
+    "Modern Swiss neo-grotesk, balanced geometry, minimalist Silicon Valley tech journal aesthetic, pristine letter-spacing.",
+  diagram_mono:
+    "Technical monospace typography, tabular alignment, blueprint schematic annotation style with sharp geometric glyphs.",
+};
+
+export const TEXT_PLACEMENT_VOCABULARIES: Record<TextPlacement, string> = {
+  bottom_third_scrim:
+    "Anchored at the bottom third with a smooth dark gradient/scrim overlay beneath the typography ensuring maximum optical contrast and effortless readability.",
+  top_header_clean:
+    "Clean top header banner placement with subtle dark ambient gradient falloff, keeping the lower visual field open for hero focal energy.",
+  split_top_bottom:
+    "Publication bug and metadata tag in the top margin, primary hook headline anchored boldly in the lower third with contrast-backed gradient.",
+  integrated_billboard:
+    "Bold integrated typographic billboard composition woven into the spatial depth of the visual scene with realistic ambient occlusion.",
 };

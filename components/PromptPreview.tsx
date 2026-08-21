@@ -7,6 +7,7 @@ import { compileStudioPrompt } from "@/lib/compiler";
 
 export const PromptPreview: React.FC = () => {
   const {
+    pipelineMode,
     rawPrompt,
     domain,
     lighting,
@@ -24,14 +25,23 @@ export const PromptPreview: React.FC = () => {
     editMode,
     baseImage,
     maskImage,
+    postCategory,
+    headlineText,
+    publicationBadge,
+    badgePosition,
+    authorBadge,
+    typographyStyle,
+    textPlacement,
+    artisticStyle,
   } = useStudioStore();
 
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedCurl, setCopiedCurl] = useState(false);
   const [viewMode, setViewMode] = useState<"xml" | "curl">("xml");
 
-  const compiledPrompt = compileStudioPrompt({
-    rawPrompt: rawPrompt || "Luxury product studio concept",
+  const payload = {
+    pipelineMode,
+    rawPrompt: rawPrompt || "Luxury concept",
     domain,
     lighting,
     composition,
@@ -48,31 +58,21 @@ export const PromptPreview: React.FC = () => {
     editMode,
     baseImage,
     maskImage,
-  });
+    postCategory,
+    headlineText,
+    publicationBadge,
+    badgePosition,
+    authorBadge,
+    typographyStyle,
+    textPlacement,
+    artisticStyle,
+  };
+
+  const compiledPrompt = compileStudioPrompt(payload);
 
   const curlCommand = `curl -X POST http://localhost:3001/api/generate \\
   -H "Content-Type: application/json" \\
-  -d '${JSON.stringify(
-    {
-      rawPrompt: rawPrompt || "Luxury product studio concept",
-      domain,
-      lighting,
-      composition,
-      material,
-      aspectRatio,
-      brandColor,
-      labelMode,
-      brandName,
-      productName,
-      productDetail,
-      packagingText,
-      excludeElements,
-      toggles,
-      editMode,
-    },
-    null,
-    2
-  ).replace(/'/g, "'\\''")}'`;
+  -d '${JSON.stringify(payload, null, 2).replace(/'/g, "'\\''")}'`;
 
   const handleCopyPrompt = async () => {
     try {

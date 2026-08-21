@@ -24,7 +24,12 @@ export const Gallery: React.FC = () => {
     link.href = item.imageData.startsWith("data:")
       ? item.imageData
       : `data:${item.mimeType};base64,${item.imageData}`;
-    link.download = `imagen-banana-${item.parameters.domain.toLowerCase().replace(/\s+/g, "-")}-${item.timestamp}.jpg`;
+    
+    const prefix = item.parameters.pipelineMode === "social_editorial"
+      ? `editorial-${item.parameters.postCategory || "post"}`
+      : `ecommerce-${item.parameters.domain?.toLowerCase() || "asset"}`;
+
+    link.download = `imagen-banana-${prefix.replace(/\s+/g, "-")}-${item.timestamp}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -89,6 +94,11 @@ export const Gallery: React.FC = () => {
           const imageSrc = item.imageData.startsWith("data:")
             ? item.imageData
             : `data:${item.mimeType};base64,${item.imageData}`;
+
+          const itemTitle =
+            item.parameters.pipelineMode === "social_editorial"
+              ? item.parameters.postCategory || "Editorial"
+              : item.parameters.domain || "E-Commerce";
 
           return (
             <div
@@ -167,8 +177,8 @@ export const Gallery: React.FC = () => {
               {/* Meta details footer */}
               <div className="p-2.5 bg-zinc-900/90 flex flex-col gap-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-medium text-amber-300/90 truncate">
-                    {item.parameters.domain}
+                  <span className="font-medium text-amber-300/90 truncate capitalize">
+                    {itemTitle}
                   </span>
                   <span className="text-[10px] text-zinc-500 flex items-center gap-0.5">
                     <Clock className="w-3 h-3" />
