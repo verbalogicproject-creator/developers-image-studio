@@ -1,0 +1,186 @@
+schema_version: "2.2.0"
+project_name: "imagen-nano-banana-image-studio-v2"
+target_environment:
+  platform: "linux (Termux Android)"
+  node_version: "v24.18.0"
+  npm_version: "11.16.0"
+  port: 3001
+  framework: "Next.js 15.1.7 (App Router)"
+
+model_integration:
+  sdk: "@google/genai"
+  active_model: "gemini-3.1-flash-image"
+  model_series: "Nano Banana 2 Multimodal"
+  api_key_env_var: "GEMINI_API_KEY"
+  request_method: "ai.models.generateContent"
+  request_payload_structure:
+    model: "gemini-3.1-flash-image"
+    contents:
+      - text: "<compiled_xml_prompt>"
+      - inlineData:
+          data: "<base64_base_image_optional>"
+          mimeType: "image/jpeg"
+      - inlineData:
+          data: "<base64_mask_image_optional>"
+          mimeType: "image/png"
+    config:
+      responseModalities: ["IMAGE"]
+      imageConfig:
+        aspectRatio: "1:1 | 3:4 | 4:3 | 9:16 | 16:9"
+  response_parsing:
+    data_path: "response.candidates[0].content.parts[0].inlineData.data"
+    mime_type_path: "response.candidates[0].content.parts[0].inlineData.mimeType"
+
+file_manifest:
+  - path: "/root/image-studio/types/index.ts"
+    role: "Core TypeScript type contracts and API interfaces"
+    exports:
+      - "PipelineMode"
+      - "DomainOption"
+      - "LightingOption"
+      - "CompositionOption"
+      - "MaterialOption"
+      - "AspectRatioOption"
+      - "LabelModeOption"
+      - "PostCategory"
+      - "TypographyStyle"
+      - "TextPlacement"
+      - "ArtisticStyle"
+      - "BadgePosition"
+      - "OrchestratorState"
+      - "GenerationItem"
+      - "GenerateApiRequest"
+      - "GenerateApiResponse"
+
+  - path: "/root/image-studio/lib/constants.ts"
+    role: "Domain vocabularies, photographic dictionaries, and social editorial presets"
+    exports:
+      - "DOMAIN_OPTIONS"
+      - "LIGHTING_OPTIONS"
+      - "COMPOSITION_OPTIONS"
+      - "MATERIAL_OPTIONS"
+      - "ASPECT_RATIO_OPTIONS"
+      - "DOMAIN_VOCABULARIES"
+      - "LIGHTING_VOCABULARIES"
+      - "COMPOSITION_VOCABULARIES"
+      - "MATERIAL_VOCABULARIES"
+      - "POST_CATEGORIES"
+      - "TYPOGRAPHY_STYLES"
+      - "TEXT_PLACEMENTS"
+      - "ARTISTIC_STYLES"
+      - "BADGE_POSITIONS"
+      - "ARTISTIC_STYLE_VOCABULARIES"
+      - "TYPOGRAPHY_STYLE_VOCABULARIES"
+      - "TEXT_PLACEMENT_VOCABULARIES"
+
+  - path: "/root/image-studio/lib/schema.ts"
+    role: "Zod runtime validation schemas for API and client payloads"
+    exports:
+      - "GenerateRequestSchema"
+      - "OrchestratorTogglesSchema"
+      - "GenerateRequestInput"
+
+  - path: "/root/image-studio/lib/compiler.ts"
+    role: "Visual Context Prompt Compiler Engine (XML tag synthesis)"
+    exports:
+      - "compileStudioPrompt"
+
+  - path: "/root/image-studio/lib/store.ts"
+    role: "Zustand store with localStorage persistence across sessions"
+    exports:
+      - "useStudioStore"
+
+  - path: "/root/image-studio/app/api/generate/route.ts"
+    role: "Next.js backend API route calling @google/genai SDK"
+    exports:
+      - "POST"
+
+  - path: "/root/image-studio/components/CanvasMask.tsx"
+    role: "Touch-friendly HTML5 Canvas overlay for inpainting masks"
+    exports:
+      - "CanvasMask"
+
+  - path: "/root/image-studio/components/StudioTab.tsx"
+    role: "Primary Studio interface (Dual-pipeline prompts, copy inputs, viewport, gallery)"
+    exports:
+      - "StudioTab"
+
+  - path: "/root/image-studio/components/OrchestratorTab.tsx"
+    role: "Master Pipeline GUI (E-Commerce and Social Editorial controls)"
+    exports:
+      - "OrchestratorTab"
+
+  - path: "/root/image-studio/components/Gallery.tsx"
+    role: "Local generation history strip with parameter restoration and inpaint bridge"
+    exports:
+      - "Gallery"
+
+  - path: "/root/image-studio/components/PromptPreview.tsx"
+    role: "Live compiled XML prompt inspector and CLI curl generator"
+    exports:
+      - "PromptPreview"
+
+  - path: "/root/image-studio/components/ColorPickerInput.tsx"
+    role: "Hex color picker with preview swatch and luxury palette presets"
+    exports:
+      - "ColorPickerInput"
+
+  - path: "/root/image-studio/components/Header.tsx"
+    role: "Studio header with branding, active model badge, and tab navigation"
+    exports:
+      - "Header"
+
+state_schema:
+  persistence_storage_key: "imagen-nano-banana-studio-storage"
+  keys:
+    activeTab: "'studio' | 'orchestrator'"
+    pipelineMode: "'ecommerce' | 'social_editorial'"
+    editMode: "'generate' | 'edit'"
+    rawPrompt: "string"
+    aspectRatio: "'1:1' | '3:4' | '4:3' | '9:16' | '16:9'"
+    brandColor: "string (hex format #RRGGBB)"
+    excludeElements: "string"
+    
+    # E-Commerce Keys
+    domain: "'Skincare' | 'Fine Jewelry' | 'Heritage Wine' | 'Modern SaaS' | 'Organic Food'"
+    lighting: "'Diffused Natural' | 'Studio Rim' | 'Low-key Moody' | 'Golden Hour'"
+    composition: "'Macro/Close-up' | 'Flat lay' | 'Isometric' | 'Wide Angle'"
+    material: "'Matte/Frosted' | 'High Gloss/Condensation' | 'Textured/Organic'"
+    labelMode: "'none' | 'wordmark' | 'full' | 'custom'"
+    brandName: "string"
+    productName: "string"
+    productDetail: "string"
+    packagingText: "string"
+    toggles:
+      negativeSpace: "boolean"
+      studioIsolation: "boolean"
+      naturalContext: "boolean"
+
+    # Social Editorial Keys
+    postCategory: "'deep_tech' | 'quantum_cosmology' | 'ai_dev_marketing' | 'pop_science' | 'infographic_diagram'"
+    headlineText: "string"
+    publicationBadge: "string"
+    badgePosition: "'top_left' | 'top_right'"
+    authorBadge: "string"
+    typographyStyle: "'bold_impact_sans' | 'editorial_luxury_serif' | 'clean_tech_grotesk' | 'diagram_mono'"
+    textPlacement: "'bottom_third_scrim' | 'top_header_clean' | 'split_top_bottom' | 'integrated_billboard'"
+    artisticStyle: "'luminescent_particles' | 'cosmic_synapses' | '3d_matte_clay' | 'scientific_schematic'"
+
+    # Runtime & Gallery
+    gallery: "Array<GenerationItem> (Max 15 items)"
+    currentGeneration: "GenerationItem | null"
+    isGenerating: "boolean"
+    error: "string | null"
+    baseImage: "string | null (Base64)"
+    baseImageMimeType: "string"
+    maskImage: "string | null (Base64)"
+
+architectural_invariants:
+  1_model_target: "Do not switch model from gemini-3.1-flash-image back to legacy imagen models."
+  2_method_call: "Always call ai.models.generateContent; never call generateImages."
+  3_response_format: "Nano Banana returns inlineData in content parts; do not expect generatedImages array."
+  4_hydration_safety: "app/page.tsx must use mounted state check before rendering to prevent SSR hydration mismatch with localStorage."
+  5_canvas_scale_math: "Canvas pointer coordinates must be multiplied by (canvas.width / rect.width) to prevent touch drift."
+  6_termux_footprint: "Keep dependencies lightweight and fast to compile on mobile CPUs."
+  7_xml_prompt_tags: "Prompts must use structured XML tags to maintain strong prompt adherence in Gemini."
+  8_secret_protection: ".env.local is gitignored; never commit raw API keys."

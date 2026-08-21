@@ -1,0 +1,110 @@
+```mermaid
+flowchart TD
+    %% ==========================================
+    %% CLIENT LAYER
+    %% ==========================================
+    subgraph ClientLayer ["Client Presentation Layer (Next.js 15 App Router)"]
+        Page["app/page.tsx (Hydration Guard)"]
+        Header["components/Header.tsx (Brand & Tabs)"]
+        
+        subgraph StudioTabComp ["Studio View (components/StudioTab.tsx)"]
+            PipeSwitch["Pipeline Selector (E-Com vs Social)"]
+            ModeSwitch["Mode Selector (T2I vs Inpaint)"]
+            PromptInput["Visual Concept Prompt Textarea"]
+            CopyInput["Headline / Packaging Copy Input"]
+            MetaInputs["Publication Bug & Author Badge"]
+            InspirationChips["Preset Inspiration Chips"]
+            Viewport["Active Viewport (Zoom / Download / Inpaint Bridge)"]
+            CanvasEditor["HTML5 Touch Inpaint Canvas (components/CanvasMask.tsx)"]
+        end
+
+        subgraph OrchestratorTabComp ["Orchestrator GUI (components/OrchestratorTab.tsx)"]
+            MasterPipe["Master Pipeline Switcher"]
+            EcomGUI["E-Commerce Controls (Domain, Lighting, Composition, Material, Label)"]
+            SocialGUI["Social Editorial Controls (Category, Art Style, Typography Vibe, Scrim Layout)"]
+            ColorPicker["ColorPickerInput.tsx (Hex & Swatches)"]
+            ExclusionInput["Negative Constraints Input"]
+        end
+
+        GalleryComp["components/Gallery.tsx (Cached Generations Grid)"]
+        PromptPreviewComp["components/PromptPreview.tsx (Live XML & CLI curl)"]
+    end
+
+    %% ==========================================
+    %% STATE & COMPILATION LAYER
+    %% ==========================================
+    subgraph StateAndCompiler ["State & Prompt Compiler Layer"]
+        ZustandStore["Zustand Store (lib/store.ts)"]
+        LocalStorage[("Browser LocalStorage Cache (15 items)")]
+        
+        ZodValidator["Zod Schema (lib/schema.ts)"]
+        
+        subgraph CompilerEngine ["Prompt Compiler Engine (lib/compiler.ts)"]
+            EcomBranch["E-Commerce XML Synthesis (<photographer_persona>, <domain_aesthetics>, <packaging_typography>, <lighting_and_atmosphere>, <composition_and_framing>)"]
+            SocialBranch["Social Editorial XML Synthesis (<editorial_art_director>, <editorial_theme>, <visual_art_style>, <graphic_design_and_typography>, <color_direction>)"]
+            ExclusionBlock["<exclusion_constraints>"]
+            InpaintBlock["<inpainting_edit_directive>"]
+        end
+    end
+
+    %% ==========================================
+    %% BACKEND & SDK LAYER
+    %% ==========================================
+    subgraph ServerLayer ["Backend Next.js API Route (app/api/generate/route.ts)"]
+        RouteHandler["POST /api/generate"]
+        EnvKey["process.env.GEMINI_API_KEY"]
+        GoogleGenAISDK["@google/genai Node SDK (GoogleGenAI Client)"]
+        
+        subgraph MultimodalBuilder ["Multimodal Payload Assembly"]
+            TextPart["Part 0: { text: compiledPrompt }"]
+            BaseImagePart["Part 1 (Optional): { inlineData: { data: cleanBase64, mimeType } }"]
+            MaskImagePart["Part 2 (Optional): { inlineData: { data: cleanMaskBase64, mimeType: 'image/png' } }"]
+        end
+    end
+
+    %% ==========================================
+    %% GEMINI MULTIMODAL MODEL
+    %% ==========================================
+    subgraph GoogleAICloud ["Google Gen AI Engine"]
+        NanoBanana["gemini-3.1-flash-image (Nano Banana 2)"]
+        Config["config: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio } }"]
+    end
+
+    %% ==========================================
+    %% DATA FLOW CONNECTIONS
+    %% ==========================================
+    Page --> Header
+    Page --> StudioTabComp
+    Page --> OrchestratorTabComp
+    
+    StudioTabComp <--> ZustandStore
+    OrchestratorTabComp <--> ZustandStore
+    GalleryComp <--> ZustandStore
+    PromptPreviewComp <--> ZustandStore
+    
+    ZustandStore <--> LocalStorage
+
+    StudioTabComp -- "1. Trigger Generation" --> ZodValidator
+    ZodValidator --> CompilerEngine
+    
+    CompilerEngine -- "2. Compile Prompt" --> RouteHandler
+    EnvKey --> RouteHandler
+    RouteHandler --> GoogleGenAISDK
+    
+    GoogleGenAISDK --> MultimodalBuilder
+    MultimodalBuilder --> NanoBanana
+    Config --> NanoBanana
+
+    NanoBanana -- "3. Generate Image" --> RouteHandler
+    RouteHandler -- "4. Extract candidate.content.parts[0].inlineData.data" --> StudioTabComp
+    
+    StudioTabComp -- "5. Push GenerationItem" --> ZustandStore
+    ZustandStore --> Viewport
+    ZustandStore --> GalleryComp
+
+    Viewport -- "Bridge to Inpaint" --> CanvasEditor
+    GalleryComp -- "Bridge to Inpaint" --> CanvasEditor
+    CanvasEditor -- "maskImage Base64" --> ZustandStore
+    
+    GalleryComp -- "Export Manifest" --> ManifestJSON[("screening-manifest.json")]
+```
