@@ -76,6 +76,8 @@ export function float32ToBuffer(vector: Float32Array): Buffer {
   );
 }
 
+export const float32ArrayToBuffer = float32ToBuffer;
+
 /**
  * Converts an SQLite BLOB Buffer back to a typed Float32Array.
  */
@@ -88,3 +90,5 @@ export function bufferToFloat32(buffer: Buffer): Float32Array {
   );
   return new Float32Array(arrayBuffer);
 }
+
+export const bufferToFloat32Array = bufferToFloat32;

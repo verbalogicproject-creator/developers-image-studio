@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "memory": "tsx memory/cli.ts"
+    "memory": "tsx memory/cli.ts",
+    "test:phase1": "tsx memory/tests/phase1_audit_suite.ts"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

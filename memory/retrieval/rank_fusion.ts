@@ -12,6 +12,14 @@ export interface RankedCandidate {
   reason: string;
 }
 
+export function calculateRRFScore(
+  rank: number,
+  weight = 1.0,
+  k = 60
+): number {
+  return weight / (k + rank);
+}
+
 export function reciprocalRankFusion(
   semanticRankings: Array<{ id: string; score: number; sourceType?: string }>,
   lexicalRankings: Array<{ id: string; score: number; sourceType?: string }>,
