@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Sliders,
   Sparkles,
@@ -15,7 +16,20 @@ import {
   Layout,
   Palette,
   FileText,
+  Box,
 } from "lucide-react";
+
+const Orchestrator3DCanvas = dynamic(
+  () => import("./Orchestrator3DCanvas"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[480px] rounded-2xl bg-zinc-950/80 border border-zinc-800 flex items-center justify-center text-xs text-zinc-500 font-mono">
+        Loading 3D Gravity Canvas...
+      </div>
+    ),
+  }
+);
 import { useStudioStore } from "@/lib/store";
 import {
   DOMAIN_OPTIONS,
@@ -52,6 +66,8 @@ import { PromptPreview } from "./PromptPreview";
 import { Button } from "./ui/Button";
 
 export const OrchestratorTab: React.FC = () => {
+  const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
+
   const {
     pipelineMode,
     setPipelineMode,
@@ -216,7 +232,48 @@ export const OrchestratorTab: React.FC = () => {
             <span>2. Social Media & Editorial Post Engine</span>
           </button>
         </div>
+
+        {/* View Mode Switcher: 3D Tactile Controller vs 2D Precision Sliders */}
+        <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60">
+          <span className="text-xs text-zinc-400 font-medium flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            Orchestrator Workspace View:
+          </span>
+          <div className="flex items-center gap-1 p-1 bg-zinc-950/90 rounded-lg border border-zinc-800">
+            <button
+              type="button"
+              onClick={() => setViewMode("3d")}
+              className={`px-3 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-all ${
+                viewMode === "3d"
+                  ? "bg-amber-500 text-zinc-950 shadow"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Box className="w-3.5 h-3.5" />
+              <span>🌐 3D Gravity Canvas</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("2d")}
+              className={`px-3 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-all ${
+                viewMode === "2d"
+                  ? "bg-amber-500 text-zinc-950 shadow"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>🎛️ 2D Precision Form</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* 3D Tactile Interactive Canvas Controller */}
+      {viewMode === "3d" && (
+        <div className="animate-in fade-in duration-300">
+          <Orchestrator3DCanvas />
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* PIPELINE 1: E-COMMERCE CONTROLS                                           */}
