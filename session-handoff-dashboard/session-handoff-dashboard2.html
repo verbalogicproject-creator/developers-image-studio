@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory OS & Session Handoff Blueprint</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #09090b; /* Deep Obsidian */
+            color: #d4d4d8;
+        }
+        
+        pre, code {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .glow-amber {
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+        }
+        
+        .diagram-node {
+            transition: all 0.3s ease;
+        }
+        
+        .diagram-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.3);
+            border-color: #f59e0b;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #09090b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #27272a; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f59e0b; 
+        }
+        
+        pre::-webkit-scrollbar-track {
+            background: #18181b; 
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row antialiased selection:bg-amber-500/30 selection:text-amber-200 h-screen overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-72 bg-zinc-950 border-b md:border-b-0 md:border-r border-zinc-800/80 p-6 flex flex-col shrink-0 h-auto md:h-full overflow-y-auto">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="p-2 bg-gradient-to-br from-amber-500 to-amber-700 rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+                <i data-lucide="brain-circuit" class="w-6 h-6 text-zinc-950"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-zinc-100 tracking-tight">Memory OS</h1>
+                <p class="text-[10px] text-amber-500 font-medium tracking-wider uppercase">Session Artifact & Handoff</p>
+            </div>
+        </div>
+
+        <nav class="flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-4 md:pb-0">
+            <div class="text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-1 mt-2 hidden md:block">Architecture</div>
+            
+            <button onclick="switchTab('architecture')" id="btn-architecture" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors bg-zinc-900/80 text-amber-500 border border-zinc-800 whitespace-nowrap glow-amber">
+                <i data-lucide="network" class="w-4 h-4"></i>
+                System Topology
+            </button>
+            <button onclick="switchTab('docs')" id="btn-docs" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 whitespace-nowrap">
+                <i data-lucide="book-open" class="w-4 h-4"></i>
+                Layer Definitions
+            </button>
+
+            <div class="text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-1 mt-6 hidden md:block">Antigravity Payloads</div>
+
+            <button onclick="switchTab('implementation')" id="btn-implementation" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 whitespace-nowrap">
+                <i data-lucide="terminal-square" class="w-4 h-4"></i>
+                Build: TUI & NLP Skill
+            </button>
+            <button onclick="switchTab('build-engine')" id="btn-build-engine" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 whitespace-nowrap">
+                <i data-lucide="database-zap" class="w-4 h-4 text-emerald-500"></i>
+                Build: Engine from Scratch
+            </button>
+            <button onclick="switchTab('build-canvas')" id="btn-build-canvas" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 whitespace-nowrap">
+                <i data-lucide="layout-template" class="w-4 h-4 text-blue-400"></i>
+                Build: HTML Canvas Dashboard
+            </button>
+
+            <div class="text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-1 mt-6 hidden md:block">Strategic Roadmap</div>
+            <button onclick="switchTab('upgrades')" id="btn-upgrades" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 whitespace-nowrap">
+                <i data-lucide="rocket" class="w-4 h-4 text-purple-400"></i>
+                Future Upgrades
+            </button>
+        </nav>
+
+        <div class="mt-auto hidden md:block pt-8">
+            <div class="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/80">
+                <p class="text-[10px] text-zinc-500 mb-2 font-semibold uppercase tracking-wider">Session Status</p>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-xs text-zinc-300">gemini-embedding-2</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="relative flex h-2 w-2">
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                    <span class="text-xs text-zinc-300">GraphRAG Ready</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-6 md:p-10 overflow-y-auto bg-[#09090b]">
+        
+        <!-- Tab 1: System Topology -->
+        <section id="tab-architecture" class="tab-content active max-w-5xl mx-auto pb-10">
+            <header class="mb-8">
+                <h2 class="text-2xl font-bold text-zinc-100">Agentic Memory Loop</h2>
+                <p class="text-zinc-400 mt-2">The separation of concerns between natural language routing and deterministic execution.</p>
+            </header>
+
+            <div class="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 md:p-10 relative overflow-hidden">
+                <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsIDI1NSwgMjU1LCAwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-50 pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col items-center gap-8">
+                    
+                    <!-- User & Agent Layer -->
+                    <div class="flex flex-col md:flex-row items-center gap-6 w-full max-w-3xl">
+                        <div class="diagram-node flex-1 bg-zinc-950 border border-zinc-700 p-5 rounded-xl flex items-center gap-4 w-full">
+                            <div class="p-3 bg-zinc-800 rounded-lg text-zinc-300"><i data-lucide="user"></i></div>
+                            <div>
+                                <h4 class="font-semibold text-zinc-200">User Prompt</h4>
+                                <p class="text-xs text-zinc-500 mt-1 flex gap-1 items-center"><i data-lucide="message-square" class="w-3 h-3"></i> "Log this session plan..."</p>
+                            </div>
+                        </div>
+                        
+                        <div class="hidden md:flex flex-col items-center text-zinc-600">
+                            <i data-lucide="arrow-right" class="w-6 h-6"></i>
+                        </div>
+
+                        <div class="diagram-node flex-1 bg-zinc-950 border border-amber-500/40 p-5 rounded-xl flex items-center gap-4 w-full glow-amber">
+                            <div class="p-3 bg-amber-500/10 text-amber-500 rounded-lg"><i data-lucide="bot"></i></div>
+                            <div>
+                                <h4 class="font-semibold text-amber-400">Antigravity Agent</h4>
+                                <p class="text-xs text-zinc-400 mt-1">Parses intent via <span class="font-mono text-amber-200/70 bg-amber-500/10 px-1 rounded">/memory-engine</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flow Down -->
+                    <div class="flex flex-col items-center -my-2 text-zinc-600">
+                        <div class="h-8 border-l-2 border-dashed border-zinc-700"></div>
+                        <div class="bg-zinc-800 text-xs px-3 py-1 rounded-full text-zinc-400 font-mono flex items-center gap-2"><i data-lucide="terminal" class="w-3 h-3"></i> Executes Shell Command</div>
+                        <div class="h-8 border-l-2 border-dashed border-zinc-700"></div>
+                    </div>
+
+                    <!-- Execution Layer -->
+                    <div class="diagram-node bg-zinc-900 border border-zinc-700 p-6 rounded-xl w-full max-w-3xl relative">
+                        <div class="absolute -top-3 left-6 bg-zinc-800 px-3 py-1 rounded-full text-xs font-semibold text-zinc-300 border border-zinc-700 shadow-lg">Execution Layer</div>
+                        
+                        <div class="flex flex-col md:flex-row items-center gap-6 mt-2">
+                            <div class="flex-1 text-center md:text-left">
+                                <h3 class="text-lg font-bold text-zinc-100 flex items-center justify-center md:justify-start gap-2">
+                                    <i data-lucide="layout-dashboard" class="w-5 h-5 text-amber-500"></i> Memory OS (TUI)
+                                </h3>
+                                <p class="text-sm text-zinc-400 mt-2 mb-4">Interactive Node.js Terminal UI handling deterministic logic and file hashing.</p>
+                                <div class="flex flex-wrap gap-2 justify-center md:justify-start">
+                                    <span class="text-[10px] px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-zinc-400"><i data-lucide="search" class="w-3 h-3 inline mr-1"></i> Search</span>
+                                    <span class="text-[10px] px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-zinc-400"><i data-lucide="database" class="w-3 h-3 inline mr-1"></i> Ingest</span>
+                                    <span class="text-[10px] px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-zinc-400"><i data-lucide="clock" class="w-3 h-3 inline mr-1"></i> node-cron</span>
+                                </div>
+                            </div>
+                            
+                            <div class="h-px w-full md:w-px md:h-24 bg-zinc-700"></div>
+                            
+                            <div class="flex-1 text-center md:text-left">
+                                <h3 class="text-lg font-bold text-zinc-100 flex items-center justify-center md:justify-start gap-2">
+                                    <i data-lucide="cpu" class="w-5 h-5 text-emerald-500"></i> Local Engine
+                                </h3>
+                                <p class="text-sm text-zinc-400 mt-2 mb-4">SQLite packed binary storage & pure JS Float32 Cosine Similarity.</p>
+                                <div class="flex flex-wrap gap-2 justify-center md:justify-start">
+                                    <span class="text-[10px] px-2 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded text-emerald-400 font-mono">gemini-embedding-2</span>
+                                    <span class="text-[10px] px-2 py-1 bg-blue-500/10 border border-blue-500/30 rounded text-blue-400">GraphRAG (.ctx)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 2: Layer Definitions -->
+        <section id="tab-docs" class="tab-content max-w-5xl mx-auto pb-10">
+            <header class="mb-8">
+                <h2 class="text-2xl font-bold text-zinc-100">Separation of Concerns</h2>
+                <p class="text-zinc-400 mt-2">Detailed breakdown of the Translation and Execution layers.</p>
+            </header>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl">
+                    <div class="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-lg flex items-center justify-center mb-6 border border-amber-500/20">
+                        <i data-lucide="bot-message-square" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-zinc-100 mb-3">Translation Layer (Antigravity Skill)</h3>
+                    <p class="text-sm text-zinc-400 mb-4 leading-relaxed">
+                        The LLM operates strictly as a semantic router. It does not touch the database or perform mathematical retrieval. It listens for natural language intents, formats the data, and invokes the deterministic CLI.
+                    </p>
+                    <ul class="space-y-3 text-sm text-zinc-300">
+                        <li class="flex gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 shrink-0"></i> <span>Interprets ambiguous user intents ("Where were we?").</span></li>
+                        <li class="flex gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 shrink-0"></i> <span>Formats session summaries into clean Markdown.</span></li>
+                        <li class="flex gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 shrink-0"></i> <span>Executes strict shell commands to interface with the OS.</span></li>
+                    </ul>
+                </div>
+
+                <div class="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl">
+                    <div class="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-lg flex items-center justify-center mb-6 border border-blue-500/20">
+                        <i data-lucide="terminal" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-zinc-100 mb-3">Execution Layer (Memory OS)</h3>
+                    <p class="text-sm text-zinc-400 mb-4 leading-relaxed">
+                        A deterministic Node.js environment handling file indexing, cron automation, binary BLOB storage in SQLite, and pure JS Float32 Cosine Similarity calculations.
+                    </p>
+                    <ul class="space-y-3 text-sm text-zinc-300">
+                        <li class="flex gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 shrink-0"></i> <span>Provides an interactive TUI (menus, prompts) for human use.</span></li>
+                        <li class="flex gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 shrink-0"></i> <span>Accepts argument flags for headless Agent use.</span></li>
+                        <li class="flex gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 shrink-0"></i> <span>Manages `node-cron` jobs for automated daily ingestion.</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 3: Build TUI & NLP Skill -->
+        <section id="tab-implementation" class="tab-content max-w-5xl mx-auto pb-10">
+            <header class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-zinc-100">Payload: Build TUI & NLP Skill</h2>
+                    <p class="text-zinc-400 mt-2">Scaffolds the interactive terminal OS and the Antigravity natural language translator skill.</p>
+                </div>
+                <button id="copyBtn-tui" onclick="copyPayload('prompt-tui', 'copyBtn-tui')" class="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] shrink-0">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                    <span>Copy Prompt</span>
+                </button>
+            </header>
+
+            <div class="relative group h-full">
+                <pre class="bg-[#18181b] border border-zinc-800 p-6 rounded-xl overflow-x-auto overflow-y-auto max-h-[60vh] text-sm text-zinc-300 leading-relaxed shadow-inner"><code id="prompt-tui">You are an elite TypeScript architect and Context Engine specialist. We are upgrading our local multimodal memory engine into a comprehensive "Memory OS" with seamless natural language integration.
+
+Please execute the following two architectural upgrades in our Termux environment:
+
+### Step 1: The Interactive Memory OS (CLI)
+Refactor our existing memory CLI entry point (`memory/cli.ts` or `index.ts`) into an interactive Terminal User Interface (TUI).
+1. **Dependencies:** Integrate the `prompts` (or `inquirer`) and `node-cron` libraries.
+2. **Main Menu Loop:** When executed without arguments, display an interactive selection menu:
+   - `[ Search Memory ]`: Prompts for a query and executes hybrid retrieval.
+   - `[ Manual Ingestion ]`: Triggers the file indexing pipeline.
+   - `[ Log Session / Note ]`: Opens a multiline text prompt to ingest a direct string into the Experiential Memory table.
+   - `[ Automation Config ]`: Toggles a `node-cron` job (e.g., daily at 20:00) that runs the ingestion pipeline in the background. Persist this setting in a local JSON config.
+   - `[ Graph Inspector ]`: Displays current `.ctx` architectural relations.
+3. Ensure the CLI still accepts raw arguments (e.g., `npm run memory -- search "query"`) so it can be invoked programmatically by the agent.
+
+### Step 2: The Antigravity Skill (Natural Language Translator)
+Create a new file at `.agents/skills/memory-engine.md`. This will automatically register the `/memory-engine` slash command.
+
+Populate the file with this exact structure:
+
+&#96;&#96;&#96;yaml
+---
+name: memory-engine
+description: Interfaces with the Local Multimodal Project Memory Engine. Translates natural language into database retrievals, logs session summaries, and manages project context.
+---
+&#96;&#96;&#96;
+# Memory Engine: Natural Language Command Translator
+
+When the user invokes this skill, analyze their natural language input and map it strictly to one of the following deterministic actions. **Do not guess; execute the corresponding terminal command.**
+
+**1. Retrieval Intent**
+- *Triggers:* "Where were we on...", "What is the last thing we did?", "Pull memory for..."
+- *Action:* Extract the core search subject. Execute the shell command: `npm run memory -- search "&lt;subject&gt;"`
+- *Response:* Read the stdout context and answer the user's question seamlessly based on the retrieved memory.
+
+**2. Logging & Idea Intent**
+- *Triggers:* "Log this plan", "Save this idea to memory", "Remember that..."
+- *Action:* Format the concept into a clean markdown string. Execute the shell command: `npm run memory -- ingest-text "&lt;formatted_string&gt;"`
+- *Response:* Confirm ingestion and provide the user with the generated embedding ID if available.
+
+**3. Session Handoff & Summarization Intent**
+- *Triggers:* "Summarize session and log to memory", "We are done, save state"
+- *Action:* Analyze the current active conversation trajectory. Generate a comprehensive "Session Handoff" summary detailing decisions made, files altered, and next steps. Execute the shell command: `npm run memory -- ingest-text "&lt;session_handoff_summary&gt;"`
+- *Response:* Print the summary to the terminal and confirm it has been successfully encoded into the semantic graph.
+</code></pre>
+            </div>
+        </section>
+
+        <!-- Tab 4: Build Backend Engine from Scratch -->
+        <section id="tab-build-engine" class="tab-content max-w-5xl mx-auto pb-10">
+            <header class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-zinc-100">Payload: Build Memory Engine from Scratch</h2>
+                    <p class="text-zinc-400 mt-2">Pass this to Antigravity to build the backend SQLite/Float32 retrieval system using the reference manual specifications.</p>
+                </div>
+                <button id="copyBtn-engine" onclick="copyPayload('prompt-engine', 'copyBtn-engine')" class="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] shrink-0">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                    <span>Copy Prompt</span>
+                </button>
+            </header>
+
+            <div class="relative group h-full">
+                <pre class="bg-[#18181b] border border-zinc-800 p-6 rounded-xl overflow-x-auto overflow-y-auto max-h-[60vh] text-sm text-zinc-300 leading-relaxed shadow-inner"><code id="prompt-engine">You are an elite TypeScript and Next.js architect operating within a Termux Android environment. I need you to build a local, highly optimized Project Memory & Context System for our AI orchestration framework. 
+
+This system will ingest local project files (code, markdown, and `.ctx` diagrams) and use Google's `gemini-embedding-2` model to create a searchable vector store.
+
+**Critical Requirements & Architecture:**
+
+1. **Termux-Safe Storage & Compute (NO VSS EXTENSIONS):** - Store file metadata, text chunks, and embedding vectors directly in `sqlite3`.
+   - Embeddings must be packed into binary BLOBs using `Buffer.from(vector.buffer)`.
+   - Implement a pure JavaScript cosine similarity function (`vector_math.ts`) that loops over `Float32Array` buffers to compute distances in-memory.
+
+2. **Database Schema Setup (`db.ts`):**
+   - Table `files` (id, filepath, content_hash, mtime).
+   - Table `chunks` (id, file_id, chunk_index, content, symbol_name, heading, embedding BLOB, created_at).
+   - Table `relations` (GraphRAG edges for .ctx files).
+   - Experiential memory table for user notes.
+
+3. **API Rules for `gemini-embedding-2`:**
+   - **Ingestion (Asymmetric Document):** Send text formatted exactly as: `title: {filename} | text: {chunk_content}`.
+   - **Retrieval (Asymmetric Query):** Send user queries formatted exactly as: `task: search result | query: {user_query}`.
+
+4. **Semantic Chunkers:**
+   - Build a `code_chunker.ts` that splits by top-level AST symbols (functions, interfaces).
+   - Build a `ctx_chunker.ts` that extracts `@relation` tags for GraphRAG topologies.
+
+Please scaffold `db.ts`, `vector_math.ts`, `ingester.ts`, and `retriever.ts` ensuring clean separation of concerns and robust Termux execution. Apply Reciprocal Rank Fusion (RRF) in the retriever to blend exact FTS5 text matches with the Float32 cosine scores.
+</code></pre>
+            </div>
+        </section>
+
+        <!-- Tab 5: Build Canvas HTML -->
+        <section id="tab-build-canvas" class="tab-content max-w-5xl mx-auto pb-10">
+            <header class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-zinc-100">Payload: Build Session Dashboard (For Gemini)</h2>
+                    <p class="text-zinc-400 mt-2">Pass this directly to the Gemini chat canvas to instruct it to generate this exact interactive HTML dashboard format for future sessions.</p>
+                </div>
+                <button id="copyBtn-canvas" onclick="copyPayload('prompt-canvas', 'copyBtn-canvas')" class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-zinc-950 font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] shrink-0">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                    <span>Copy Prompt</span>
+                </button>
+            </header>
+
+            <div class="relative group h-full">
+                <pre class="bg-[#18181b] border border-zinc-800 p-6 rounded-xl overflow-x-auto overflow-y-auto max-h-[60vh] text-sm text-zinc-300 leading-relaxed shadow-inner"><code id="prompt-canvas">You are Gemini. I need you to generate a single-file interactive HTML dashboard to act as a "Session Artifact & Handoff Toolkit" for my web development workflow.
+
+You MUST follow the File Generation Workflow and output the code in a single HTML block using this exact format:
+&#96;&#96;&#96;html:Session Dashboard:{filename.html}
+&lt;!-- Code --&gt;
+&#96;&#96;&#96;eof
+
+**Styling & Requirements:**
+1. **Tech Stack:** TailwindCSS (via CDN) and Lucide Icons (`unpkg.com/lucide@latest`).
+2. **Aesthetic:** Luxury tech workspace. Deep obsidian background (`bg-[#09090b]`), zinc containers (`bg-zinc-900/50`), and glowing amber accents (`#f59e0b` / `text-amber-500`).
+3. **Structure:**
+   - A left fixed sidebar (or top bar on mobile) with navigation buttons acting as tabs.
+   - A main content area where tabs fade in/out using simple vanilla JavaScript.
+4. **Content Sections to Include:**
+   - A "System Topology" tab showing an HTML/CSS diagram of the architecture discussed.
+   - Multiple "Payload" tabs containing syntax-highlighted `&lt;pre&gt;&lt;code&gt;` blocks. These blocks hold prompts or code that I can send to my local CLI agent (Antigravity).
+5. **Interactive Copy Feature:**
+   - Each Payload tab MUST have a prominent "Copy Prompt" button.
+   - Write a robust Vanilla JS function `copyPayload(elementId, buttonId)` that reads the innerHTML of the target `code` block, strips/decodes HTML entities, writes it to the clipboard, and temporarily changes the button state to "Copied!" (green background) before reverting.
+
+This artifact must be completely self-contained, responsive, and visually polished.
+</code></pre>
+            </div>
+        </section>
+
+        <!-- Tab 6: Strategic Roadmap -->
+        <section id="tab-upgrades" class="tab-content max-w-5xl mx-auto pb-10">
+            <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-zinc-100">Future Upgrades & Enhancements</h2>
+                    <p class="text-zinc-400 mt-2">A prioritized roadmap to evolve the Memory Engine and Agentic Loop.</p>
+                </div>
+                <button id="copyBtn-roadmap" onclick="copyPayload('prompt-roadmap', 'copyBtn-roadmap')" class="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:shadow-[0_0_20px_rgba(168,85,247,0.5)] shrink-0">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                    <span>Export Markdown Tasklist</span>
+                </button>
+            </header>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Engine Upgrades -->
+                <div class="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl hover:border-emerald-500/50 transition-colors">
+                    <div class="w-10 h-10 bg-emerald-500/10 text-emerald-500 rounded-lg flex items-center justify-center mb-4 border border-emerald-500/20">
+                        <i data-lucide="cpu" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-zinc-100 mb-4">Core Engine</h3>
+                    <ul class="space-y-4 text-sm text-zinc-400">
+                        <li class="flex gap-3">
+                            <i data-lucide="image" class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5"></i> 
+                            <span><strong class="text-zinc-200">Cross-Modal Search:</strong> Ingest base64 screenshots into the database. Search code by providing an image, leveraging the multimodality of `gemini-embedding-2`.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <i data-lucide="git-merge" class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5"></i> 
+                            <span><strong class="text-zinc-200">AST Dependency Graphing:</strong> Automatically infer GraphRAG `.ctx` relations by mapping TypeScript `import` and `export` statements during ingestion.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <i data-lucide="trash-2" class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5"></i> 
+                            <span><strong class="text-zinc-200">Memory Decay:</strong> Implement a time-decay function (Elo rating for memories) that slowly deprecates outdated session handoffs unless explicitly pinned.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Agentic Upgrades -->
+                <div class="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl hover:border-amber-500/50 transition-colors">
+                    <div class="w-10 h-10 bg-amber-500/10 text-amber-500 rounded-lg flex items-center justify-center mb-4 border border-amber-500/20">
+                        <i data-lucide="bot" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-zinc-100 mb-4">Agentic Loop</h3>
+                    <ul class="space-y-4 text-sm text-zinc-400">
+                        <li class="flex gap-3">
+                            <i data-lucide="zap" class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5"></i> 
+                            <span><strong class="text-zinc-200">Proactive Context Injection:</strong> Antigravity automatically queries the engine in the background before answering, removing the need for manual `/memory-engine` calls.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <i data-lucide="git-branch" class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5"></i> 
+                            <span><strong class="text-zinc-200">Disambiguation Flow:</strong> If a memory search returns low-confidence matches (< 0.6 cosine), the agent prompts the user to clarify before proceeding.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <i data-lucide="message-square-plus" class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5"></i> 
+                            <span><strong class="text-zinc-200">Git Commit Summaries:</strong> Add a skill intent where Antigravity reads `git diff`, logs the structural changes to memory, and writes the commit message.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- UX Upgrades -->
+                <div class="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl hover:border-blue-500/50 transition-colors">
+                    <div class="w-10 h-10 bg-blue-500/10 text-blue-500 rounded-lg flex items-center justify-center mb-4 border border-blue-500/20">
+                        <i data-lucide="layout" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-zinc-100 mb-4">Dashboard & UX</h3>
+                    <ul class="space-y-4 text-sm text-zinc-400">
+                        <li class="flex gap-3">
+                            <i data-lucide="network" class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5"></i> 
+                            <span><strong class="text-zinc-200">Visual GraphRAG Explorer:</strong> Integrate `D3.js` or `vis-network` to render a living, interactive 3D node map of all `.ctx` architectural relations.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5"></i> 
+                            <span><strong class="text-zinc-200">WebSocket Sync:</strong> Connect the HTML dashboard to a local Node WebSocket server so it updates live as Antigravity executes tasks in the CLI.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <i data-lucide="moon" class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5"></i> 
+                            <span><strong class="text-zinc-200">Theme Engine:</strong> Add a robust CSS variable system to toggle between Deep Obsidian (Current), Tokyo Night, and High-Contrast Light modes.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Hidden Markdown export payload -->
+            <div class="hidden">
+                <pre><code id="prompt-roadmap"># Strategic Roadmap: Project Memory Engine
+
+## 1. Core Engine Upgrades
+- [ ] **Cross-Modal Search:** Ingest base64 screenshots into SQLite. Use `gemini-embedding-2` to allow searching code architecture by providing a UI image.
+- [ ] **AST Dependency Graphing:** Automate GraphRAG `.ctx` relations by writing an AST parser that maps TypeScript `import`/`export` statements during ingestion.
+- [ ] **Memory Decay (Elo Rating):** Implement a time-decay function to slowly deprecate outdated session handoffs, keeping search results relevant.
+
+## 2. Agentic Loop Enhancements (Antigravity)
+- [ ] **Proactive Context Injection:** Configure Antigravity to run a silent background similarity search on every prompt, removing the need for manual `/memory-engine` triggers.
+- [ ] **Disambiguation Flow:** If a search returns low confidence (< 0.6 cosine similarity), pause execution and ask the user to clarify the context.
+- [ ] **Git-Integrated Summaries:** Create a skill intent that reads `git diff`, logs the architectural changes to memory, and generates the commit message.
+
+## 3. Dashboard UX Evolvement
+- [ ] **Visual GraphRAG Explorer:** Integrate `D3.js` to render an interactive 3D node map of `.ctx` architectural relations directly in the HTML dashboard.
+- [ ] **WebSocket Sync:** Spin up a local Node WS server to feed live CLI output and indexing status directly into the HTML dashboard UI.
+- [ ] **Dynamic Theme Engine:** Add CSS variable support for switching between Deep Obsidian, Tokyo Night, and Light modes.
+</code></pre>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Reset button styles
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.className = "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 whitespace-nowrap";
+            });
+
+            // Show active tab
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            // Set active button style dynamically based on the button type
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (tabId === 'build-engine') {
+                activeBtn.className = "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors bg-zinc-900/80 text-emerald-400 border border-zinc-800 whitespace-nowrap shadow-[0_0_15px_rgba(16,185,129,0.15)]";
+            } else if (tabId === 'build-canvas') {
+                activeBtn.className = "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors bg-zinc-900/80 text-blue-400 border border-zinc-800 whitespace-nowrap shadow-[0_0_15px_rgba(59,130,246,0.15)]";
+            } else if (tabId === 'upgrades') {
+                activeBtn.className = "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors bg-zinc-900/80 text-purple-400 border border-zinc-800 whitespace-nowrap shadow-[0_0_15px_rgba(168,85,247,0.15)]";
+            } else {
+                activeBtn.className = "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors bg-zinc-900/80 text-amber-500 border border-zinc-800 whitespace-nowrap glow-amber";
+            }
+        }
+
+        // Universal Copy Payload Logic
+        function copyPayload(elementId, buttonId) {
+            const codeBlock = document.getElementById(elementId);
+            
+            // Decode HTML entities
+            const textArea = document.createElement('textarea');
+            textArea.innerHTML = codeBlock.innerHTML;
+            const textToCopy = textArea.value;
+
+            const btn = document.getElementById(buttonId);
+            const originalHtml = btn.innerHTML;
+            const originalClasses = btn.className;
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                // Success State
+                btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i><span>Copied!</span>';
+                btn.className = "flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] shrink-0";
+                lucide.createIcons();
+                
+                // Revert after 2 seconds
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.className = originalClasses;
+                    lucide.createIcons();
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                try {
+                    const range = document.createRange();
+                    range.selectNodeContents(codeBlock);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    document.execCommand('copy');
+                    selection.removeAllRanges();
+                    
+                    btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i><span>Copied!</span>';
+                    btn.className = "flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] shrink-0";
+                    lucide.createIcons();
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                        btn.className = originalClasses;
+                        lucide.createIcons();
+                    }, 2000);
+                } catch(e) {
+                    alert("Could not copy. Please select the text manually.");
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
+
