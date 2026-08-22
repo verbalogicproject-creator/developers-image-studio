@@ -1,48 +1,48 @@
 // =========================================================================
-// IMAGEN NANO BANANA IMAGE STUDIO V2 — AUTHORITATIVE ARCHITECTURAL CONTEXT
-// Format: .ctx (Local Multimodal Project Memory Architectural Memory Definition)
+// IMAGEN NANO BANANA IMAGE STUDIO V2 & MEMORY OS — ARCHITECTURE SPEC
 // =========================================================================
 
-@section SystemOverview {
-  The application is a Dual-Pipeline Visual Prompt Orchestration Engine built on Next.js 15 App Router,
-  Zustand persistent state management, and Google Gemini 3.1 Flash Image (Nano Banana 2) multimodal generation.
-}
-
 // -------------------------------------------------------------------------
-// COMPONENT DEFINITIONS & RESPONSIBILITIES
+// COMPONENT ROLES & RESPONSIBILITIES
 // -------------------------------------------------------------------------
-
-@component StudioTab {
-  responsibility: "Primary generation interface. Hosts visual concept prompt inputs, post headline typography textarea, publication bug tags, inpaint upload trigger, active viewport render, fullscreen inspection, and quick inspiration chips."
-  state_dependencies: ["useStudioStore.pipelineMode", "useStudioStore.rawPrompt", "useStudioStore.headlineText", "useStudioStore.editMode"]
-}
 
 @component OrchestratorTab {
-  responsibility: "Master parameter orchestration GUI. Hosts the Master Pipeline Selector pill switch, 5 E-Commerce domain selectors, lighting directives, camera framing, surface overrides, packaging label modes, and 5 Social Editorial post categories with typography vibes and dark gradient scrim placement."
-  state_dependencies: ["useStudioStore.pipelineMode", "useStudioStore.domain", "useStudioStore.postCategory", "useStudioStore.toggles"]
+  responsibility: "Master control plane. Directs commercial domains, lighting, composition, typography, and viral editorial themes."
+  file: "components/OrchestratorTab.tsx"
+  state_dependencies: ["useStudioStore.pipelineMode", "useStudioStore.domain", "useStudioStore.postCategory"]
+}
+
+@component StudioTab {
+  responsibility: "Primary generation interface. Real-time prompt and copy input, viewport, model status, and gallery history."
+  file: "components/StudioTab.tsx"
+  state_dependencies: ["useStudioStore.pipelineMode", "useStudioStore.headlineText", "useStudioStore.currentGeneration"]
 }
 
 @component CanvasMask {
-  responsibility: "Touch-friendly HTML5 Canvas overlay for mobile inpainting. Allows painting glowing translucent masks over reference base images with automatic device pixel ratio scaling (scaleX = canvas.width / rect.width)."
-  state_dependencies: ["useStudioStore.baseImage", "useStudioStore.maskImage"]
-}
-
-@component Gallery {
-  responsibility: "Persistent local cache strip displaying the last 15 generations. Supports one-tap parameter restoration into the studio, inpaint bridge loading, image download, and batch screening manifest JSON exports."
-  state_dependencies: ["useStudioStore.gallery", "useStudioStore.currentGeneration"]
+  responsibility: "Touch-optimized HTML5 Canvas overlay for inpainting masks. Renders high-DPI scaled strokes with zero touch drift."
+  file: "components/CanvasMask.tsx"
+  state_dependencies: ["useStudioStore.baseImage", "useStudioStore.maskImage", "useStudioStore.editMode"]
 }
 
 @component PromptPreview {
-  responsibility: "Live inspection tool for compiled XML prompts and instant CLI curl generator for terminal testing in Termux."
+  responsibility: "Live compiled XML prompt inspector and CLI curl generator."
+  file: "components/PromptPreview.tsx"
+  state_dependencies: ["useStudioStore"]
+}
+
+@component Gallery {
+  responsibility: "Persistent generation history strip (localStorage max 15 items) with parameter restoration and inpainting bridge."
+  file: "components/Gallery.tsx"
+  state_dependencies: ["useStudioStore.gallery", "useStudioStore.loadParameters"]
 }
 
 @module PromptCompiler {
-  responsibility: "Translates natural-language user intentions and structured UI states into strict, high-fidelity XML prompts for Google Gemini models."
+  responsibility: "Visual Context Prompt Compiler Engine. Translates structured state into XML directives for Gemini Nano Banana 2."
   file: "lib/compiler.ts"
 }
 
 @module GenerateApiRoute {
-  responsibility: "Next.js App Router POST handler. Assembles multimodal payload parts (text + baseImage + maskImage) and invokes @google/genai SDK ai.models.generateContent."
+  responsibility: "Next.js backend endpoint (POST /api/generate). Validates Zod schema and invokes @google/genai Node SDK."
   file: "app/api/generate/route.ts"
 }
 
@@ -92,6 +92,12 @@
   consequences: "Eliminates prompt contamination and allows targeted typography scrims for social posts while keeping clean labels for e-commerce."
 }
 
+@decision TenLayerSynchronousEvolution {
+  context: "Orchestrator, Studio components, Prompt Compiler, Zustand store, and API are tightly coupled across 10 distinct files."
+  decision: "Any modification or parameter expansion to the Orchestrator MUST be applied synchronously across all 10 layers mapped in ORCHESTRATOR_SPECS_SOT.md."
+  consequences: "Prevents state drift, dropped history parameters, and schema validation crashes."
+}
+
 @decision Float32ArrayBlobStorage {
   context: "Storing vector embeddings as JSON strings in SQLite incurs high memory allocation and CPU parsing overhead during retrieval in Termux."
   decision: "Pack Float32Array directly into binary SQLite BLOBs using Buffer.from(vector.buffer, vector.byteOffset, vector.byteLength)."
@@ -110,6 +116,10 @@
 
 @invariant GeminiNanoBananaOnly {
   rule: "Always target gemini-3.1-flash-image via ai.models.generateContent with responseModalities: ['IMAGE']. Never regress to deprecated imagen models."
+}
+
+@invariant TenLayerSyncMatrix {
+  rule: "All Orchestrator controls must exist synchronously in types/index.ts, lib/schema.ts, lib/constants.ts, lib/store.ts, lib/compiler.ts, OrchestratorTab.tsx, StudioTab.tsx, PromptPreview.tsx, Gallery.tsx, and app/api/generate/route.ts."
 }
 
 @invariant NoSSRStateHydrationMismatch {

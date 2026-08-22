@@ -184,3 +184,5 @@ architectural_invariants:
   6_termux_footprint: "Keep dependencies lightweight and fast to compile on mobile CPUs."
   7_xml_prompt_tags: "Prompts must use structured XML tags to maintain strong prompt adherence in Gemini."
   8_secret_protection: ".env.local is gitignored; never commit raw API keys."
+  9_ten_layer_sync: "Any Orchestrator parameter change MUST be applied synchronously across all 10 layers defined in ORCHESTRATOR_SPECS_SOT.md."
+
