@@ -2,25 +2,38 @@ import { RetrievedContext } from "./types";
 
 export function packageContextForAgent(
   query: string,
-  contexts: RetrievedContext[]
+  contexts: RetrievedContext[],
+  maxItems = 3,
+  maxChars = 4000
 ): string {
   if (contexts.length === 0) {
     return `### Project Memory Results\n\nNo relevant project memory found for query: "${query}".`;
   }
 
+  // Enforce context window protection limit (top N most relevant chunks)
+  const boundedContexts = contexts.slice(0, maxItems);
+
   const sections: string[] = [
     `# 🧠 Project Memory Retrieval Results`,
     `**Query:** "${query}"`,
-    `**Retrieved Items:** ${contexts.length}`,
+    `**Showing Top Matches:** ${boundedContexts.length} of ${contexts.length}`,
     `---`,
   ];
 
-  contexts.forEach((ctx, index) => {
+  let currentTotalChars = 0;
+
+  for (let index = 0; index < boundedContexts.length; index++) {
+    const ctx = boundedContexts[index];
     const itemNum = index + 1;
-    const headerParts: string[] = [`### [${itemNum}] ${ctx.symbol || ctx.heading || ctx.filepath || "Context Item"}`];
-    
+    const headerParts: string[] = [
+      `### [${itemNum}] ${ctx.symbol || ctx.heading || ctx.filepath || "Context Item"}`,
+    ];
+
     if (ctx.filepath) {
-      const lineRange = ctx.startLine && ctx.endLine ? `#L${ctx.startLine}-L${ctx.endLine}` : "";
+      const lineRange =
+        ctx.startLine && ctx.endLine
+          ? `#L${ctx.startLine}-L${ctx.endLine}`
+          : "";
       headerParts.push(`**File:** \`${ctx.filepath}${lineRange}\``);
     }
     if (ctx.symbolKind) {
@@ -43,10 +56,22 @@ export function packageContextForAgent(
       bodyBlock = "```typescript\n" + bodyBlock + "\n```";
     }
 
-    sections.push(headerParts.join("\n"));
-    sections.push(bodyBlock);
+    // Truncate overly long individual chunks if needed
+    if (bodyBlock.length > 1800) {
+      bodyBlock = bodyBlock.slice(0, 1800) + "\n... [truncated for context limit] ...\n```";
+    }
+
+    const itemText = headerParts.join("\n") + "\n\n" + bodyBlock;
+
+    if (currentTotalChars + itemText.length > maxChars && index > 0) {
+      sections.push(`*... additional matches omitted to protect context window limit.*`);
+      break;
+    }
+
+    sections.push(itemText);
     sections.push(`---`);
-  });
+    currentTotalChars += itemText.length;
+  }
 
   return sections.join("\n\n");
 }

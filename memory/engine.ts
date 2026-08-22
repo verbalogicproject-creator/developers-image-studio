@@ -15,6 +15,8 @@ import {
   GenerationMemory,
   IndexStats,
   MemoryRecord,
+  MemoryRelation,
+  MemoryType,
   RetrievedContext,
   SearchOptions,
 } from "./types";
@@ -214,7 +216,7 @@ export class MemoryEngine {
   }
 
   // ==========================================
-  // EXPERIENTIAL MEMORY INGESTION
+  // EXPERIENTIAL & DIRECT TEXT INGESTION
   // ==========================================
 
   async ingestGenerationMemory(gen: GenerationMemory): Promise<string> {
@@ -267,8 +269,47 @@ export class MemoryEngine {
     return memoryId;
   }
 
+  async ingestText(
+    content: string,
+    title?: string,
+    memoryType: MemoryType = "user_interaction",
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
+    const memoryId = `mem_note_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const now = Date.now();
+
+    const firstLine = content.split("\n")[0].replace(/^[#\s*-]+/, "").trim();
+    const resolvedTitle = title || firstLine.slice(0, 60) || "Logged Note";
+
+    const vector = await this.embeddingProvider.embedDocument({
+      text: content,
+      title: resolvedTitle,
+      context: `MemoryType: ${memoryType} | Ingested: ${new Date(now).toISOString()}`,
+    });
+
+    const memoryRecord: MemoryRecord = {
+      id: memoryId,
+      memoryType,
+      modality: "text",
+      title: resolvedTitle,
+      content,
+      metadata: {
+        ...metadata,
+        ingestedAt: now,
+      },
+      embedding: vector,
+      embeddingModel: this.embeddingProvider.modelName,
+      embeddingDimension: this.embeddingProvider.dimensions,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.db.upsertMemory(memoryRecord);
+    return memoryId;
+  }
+
   // ==========================================
-  // HYBRID RETRIEVAL
+  // HYBRID RETRIEVAL & GRAPH
   // ==========================================
 
   async search(
@@ -280,10 +321,16 @@ export class MemoryEngine {
 
   async searchFormatted(
     query: string,
-    options?: SearchOptions
+    options?: SearchOptions,
+    maxItems = 3,
+    maxChars = 4000
   ): Promise<string> {
     const contexts = await this.retriever.search(query, options);
-    return packageContextForAgent(query, contexts);
+    return packageContextForAgent(query, contexts, maxItems, maxChars);
+  }
+
+  getAllRelations(): MemoryRelation[] {
+    return this.db.getAllRelations();
   }
 
   getStats(): IndexStats {
